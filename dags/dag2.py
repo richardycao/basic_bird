@@ -10,23 +10,17 @@ args = {
     'provide_context': False
 }
 
-dag1 = DAG(
-    dag_id='dag1',
+dag2 = DAG(
+    dag_id='dag2',
     default_args=args,
     schedule_interval='@hourly',
     catchup=False
 )
 
-task1 = PythonOperator(
-    task_id='test_function',
-    python_callable=test_function,
-    dag=dag1
+task3 = PythonOperator(
+    task_id='consumer',
+    python_callable=retrieve_stream,
+    dag=dag2
 )
 
-task2 = PythonOperator(
-    task_id='producer',
-    python_callable=generate_stream,
-    dag=dag1
-)
-
-task1 >> task2
+task3

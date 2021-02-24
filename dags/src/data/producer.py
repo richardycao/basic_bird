@@ -15,3 +15,5 @@ def generate_stream():
   for i in range(10):
     print('producer:', i)
     producer.send('Topic1', value={'hello': i})
+    
+  producer.close()

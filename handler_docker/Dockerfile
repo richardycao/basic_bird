@@ -17,7 +17,7 @@ COPY . /usr/src/preprocessor
 WORKDIR /usr/src/preprocessor
 
 # Use Clang to compile the Test.cpp source file
-RUN clang++ -o preprocessor preprocessor.cpp
+RUN clang++ -O3 -Wall preprocessor.cpp -std=c++11 -lrdkafka -lpthread -lz -lstdc++ -o preprocessor
 
 # Run the output program from the previous step
 CMD ["./preprocessor"]

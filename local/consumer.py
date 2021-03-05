@@ -74,20 +74,21 @@ class Consumer(object):
     def run(self):
         for msg in self.consumer:
             message = msg.value
-            if message['type'] == 'snapshot':
-                self.init_order_book(message)
-            elif message['type'] == 'l2update':
-                self.update_order_book(message)
+            print(message)
+            # if message['type'] == 'snapshot':
+            #     self.init_order_book(message)
+            # elif message['type'] == 'l2update':
+            #     self.update_order_book(message)
 
-                # 100: consumer reaches 14000 when limit is 16000
-                # 200: works
-                # see log about 2 queues and C++
-                # the bucketizing process seems very slow
-                if self.t % 200 == 0:
-                    bv, av = self.preprocess()
-                    #print(bv, av)
-                    self.sender.send('processed', value={'bids': bv, 'asks': av})
-                self.t += 1
+            #     # 100: consumer reaches 14000 when limit is 16000
+            #     # 200: works
+            #     # see log about 2 queues and C++
+            #     # the bucketizing process seems very slow
+            #     if self.t % 200 == 0:
+            #         bv, av = self.preprocess()
+            #         #print(bv, av)
+            #         self.sender.send('processed', value={'bids': bv, 'asks': av})
+            #     self.t += 1
 
 if __name__ == "__main__":
     c = Consumer(topic='raw', bid_breakpoints=[-0.008, -0.006, -0.004, -0.002], ask_breakpoints=[0.002, 0.004, 0.006, 0.008], max_width=0.01)

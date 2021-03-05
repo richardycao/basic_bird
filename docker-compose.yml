@@ -26,11 +26,11 @@ services:
   #     interval: 30s
   #     timeout: 30s
   #     retries: 3
-  ubuntu:
-    build: './ubuntu_docker'
-    container_name: ubuntu
-    ports:
-      - '5000:22'
+  # handler:
+  #   build: './handler_docker'
+  #   container_name: handler
+  #   ports:
+  #     - '5000:22'
   zookeeper:
     image: 'bitnami/zookeeper:latest'
     container_name: zookeeper

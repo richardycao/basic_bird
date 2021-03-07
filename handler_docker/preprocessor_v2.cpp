@@ -1,3 +1,4 @@
+// Credit: https://github.com/edenhill/librdkafka/blob/master/examples/rdkafka_example.cpp
 #include <iostream>
 #include <string>
 #include <cstdlib>
@@ -329,7 +330,6 @@ int main(int argc, char **argv) {
       //     exit(1);
       //   }
       //   break;
-
       default:
         goto usage;
     }
@@ -354,22 +354,22 @@ int main(int argc, char **argv) {
         "  -p <func>       Use partitioner:\n"
         "                  random (default), hash\n"
         "  -b <brokers>    Broker address (localhost:9092)\n"
-        "  -z <codec>      Enable compression:\n"
-        "                  none|gzip|snappy|lz4|zstd\n"
+        // "  -z <codec>      Enable compression:\n"
+        // "                  none|gzip|snappy|lz4|zstd\n"
         "  -o <offset>     Start offset (consumer)\n"
-        "  -e              Exit consumer when last message\n"
-        "                  in partition has been received.\n"
-        "  -d [facs..]     Enable debugging contexts:\n"
-        "                  %s\n"
-        "  -M <intervalms> Enable statistics\n"
-        "  -X <prop=name>  Set arbitrary librdkafka "
-        "configuration property\n"
-        "                  Properties prefixed with \"topic.\" "
-        "will be set on topic object.\n"
-        "                  Use '-X list' to see the full list\n"
-        "                  of supported properties.\n"
-        "  -f <flag>       Set option:\n"
-        "                     ccb - use consume_callback\n"
+        // "  -e              Exit consumer when last message\n"
+        // "                  in partition has been received.\n"
+        // "  -d [facs..]     Enable debugging contexts:\n"
+        // "                  %s\n"
+        // "  -M <intervalms> Enable statistics\n"
+        // "  -X <prop=name>  Set arbitrary librdkafka "
+        // "configuration property\n"
+        // "                  Properties prefixed with \"topic.\" "
+        // "will be set on topic object.\n"
+        // "                  Use '-X list' to see the full list\n"
+        // "                  of supported properties.\n"
+        // "  -f <flag>       Set option:\n"
+        // "                     ccb - use consume_callback\n"
         "\n"
         " In Consumer mode:\n"
         "  writes fetched messages to stdout\n"
@@ -380,14 +380,12 @@ int main(int argc, char **argv) {
         "\n",
         argv[0],
         RdKafka::version_str().c_str(), RdKafka::version(),
-      features.c_str(),
+        features.c_str(),
         RdKafka::get_debug_contexts().c_str());
     exit(1);
   }
 
-  /*
-  * Set configuration properties
-  */
+  // Set configuration properties
   conf->set("metadata.broker.list", brokers, errstr);
 
   // if (!debug.empty()) {
@@ -401,102 +399,97 @@ int main(int argc, char **argv) {
   conf->set("event_cb", &ex_event_cb, errstr);
 
   // This section prints out the config info
-  if (do_conf_dump) {
-    int pass;
+  // if (do_conf_dump) {
+  //   int pass;
 
-    for (pass = 0 ; pass < 2 ; pass++) {
-      std::list<std::string> *dump;
-      if (pass == 0) {
-        dump = conf->dump();
-        std::cout << "# Global config" << std::endl;
-      } else {
-        dump = tconf->dump();
-        std::cout << "# Topic config" << std::endl;
-      }
+  //   for (pass = 0 ; pass < 2 ; pass++) {
+  //     std::list<std::string> *dump;
+  //     if (pass == 0) {
+  //       dump = conf->dump();
+  //       std::cout << "# Global config" << std::endl;
+  //     } else {
+  //       dump = tconf->dump();
+  //       std::cout << "# Topic config" << std::endl;
+  //     }
 
-      for (std::list<std::string>::iterator it = dump->begin();
-           it != dump->end(); ) {
-        std::cout << *it << " = ";
-        it++;
-        std::cout << *it << std::endl;
-        it++;
-      }
-      std::cout << std::endl;
-    }
-    exit(0);
-  }
+  //     for (std::list<std::string>::iterator it = dump->begin();
+  //          it != dump->end(); ) {
+  //       std::cout << *it << " = ";
+  //       it++;
+  //       std::cout << *it << std::endl;
+  //       it++;
+  //     }
+  //     std::cout << std::endl;
+  //   }
+  //   exit(0);
+  // }
 
   signal(SIGINT, sigterm);
   signal(SIGTERM, sigterm);
 
-  // Ignore producer mode for now
+  if (mode == "P") { // Producer mode
+    if(topic_str.empty())
+      goto usage;
 
-  // if (mode == "P") {
-  //   // Producer mode
-  //   if(topic_str.empty())
-  //     goto usage;
+    ExampleDeliveryReportCb ex_dr_cb;
 
-  //   ExampleDeliveryReportCb ex_dr_cb;
+    // Set delivery report callback
+    conf->set("dr_cb", &ex_dr_cb, errstr);
+    conf->set("default_topic_conf", tconf, errstr);
 
-  //   // Set delivery report callback
-  //   conf->set("dr_cb", &ex_dr_cb, errstr);
-  //   conf->set("default_topic_conf", tconf, errstr);
+    // Create producer using accumulated global configuration.
+    RdKafka::Producer *producer = RdKafka::Producer::create(conf, errstr);
+    if (!producer) {
+      std::cerr << "Failed to create producer: " << errstr << std::endl;
+      exit(1);
+    }
+    std::cout << "% Created producer " << producer->name() << std::endl;
 
-  //   // Create producer using accumulated global configuration.
-  //   RdKafka::Producer *producer = RdKafka::Producer::create(conf, errstr);
-  //   if (!producer) {
-  //     std::cerr << "Failed to create producer: " << errstr << std::endl;
-  //     exit(1);
-  //   }
+    // Read messages from stdin and produce to broker.
+    for (std::string line; run && std::getline(std::cin, line);) {
+      if (line.empty()) {
+        producer->poll(0);
+	      continue;
+      }
 
-  //   std::cout << "% Created producer " << producer->name() << std::endl;
+      RdKafka::Headers *headers = RdKafka::Headers::create();
+      headers->add("my header", "header value");
+      headers->add("other header", "yes");
 
-  //   // Read messages from stdin and produce to broker.
-  //   for (std::string line; run && std::getline(std::cin, line);) {
-  //     if (line.empty()) {
-  //       producer->poll(0);
-	//       continue;
-  //     }
+      // Produce message
+      RdKafka::ErrorCode resp =
+        producer->produce(topic_str, partition,
+                          RdKafka::Producer::RK_MSG_COPY /* Copy payload */,
+                          /* Value */
+                          const_cast<char *>(line.c_str()), line.size(),
+                          /* Key */
+                          NULL, 0,
+                          /* Timestamp (defaults to now) */
+                          0,
+                          /* Message headers, if any */
+                          headers,
+                          /* Per-message opaque value passed to
+                           * delivery report */
+                          NULL);
+      if (resp != RdKafka::ERR_NO_ERROR) {
+        std::cerr << "% Produce failed: " << RdKafka::err2str(resp) << std::endl;
+        delete headers; // Headers are automatically deleted on produce() success.
+      } else {
+        std::cerr << "% Produced message (" << line.size() << " bytes)" << std::endl;
+      }
 
-  //     RdKafka::Headers *headers = RdKafka::Headers::create();
-  //     headers->add("my header", "header value");
-  //     headers->add("other header", "yes");
+      producer->poll(0);
+    }
+    run = 1;
 
-  //     // Produce message
-  //     RdKafka::ErrorCode resp =
-  //       producer->produce(topic_str, partition,
-  //                         RdKafka::Producer::RK_MSG_COPY /* Copy payload */,
-  //                         /* Value */
-  //                         const_cast<char *>(line.c_str()), line.size(),
-  //                         /* Key */
-  //                         NULL, 0,
-  //                         /* Timestamp (defaults to now) */
-  //                         0,
-  //                         /* Message headers, if any */
-  //                         headers,
-  //                         /* Per-message opaque value passed to
-  //                          * delivery report */
-  //                         NULL);
-  //     if (resp != RdKafka::ERR_NO_ERROR) {
-  //       std::cerr << "% Produce failed: " << RdKafka::err2str(resp) << std::endl;
-  //       delete headers; // Headers are automatically deleted on produce() success.
-  //     } else {
-  //       std::cerr << "% Produced message (" << line.size() << " bytes)" << std::endl;
-  //     }
+    while (run && producer->outq_len() > 0) {
+      std::cerr << "Waiting for " << producer->outq_len() << std::endl;
+      producer->poll(1000);
+    }
 
-  //     producer->poll(0);
-  //   }
-  //   run = 1;
+    delete producer;
 
-  //   while (run && producer->outq_len() > 0) {
-  //     std::cerr << "Waiting for " << producer->outq_len() << std::endl;
-  //     producer->poll(1000);
-  //   }
-
-  //   delete producer;
-
-  // } else 
-  if (mode == "C") { // Consumer mode
+  } else if (mode == "C") { // Consumer mode
     conf->set("enable.partition.eof", "true", errstr);
 
     if(topic_str.empty())
@@ -527,13 +520,13 @@ int main(int argc, char **argv) {
     // Consume messages
     ExampleConsumeCb ex_consume_cb;
     while (run) {
-      if (use_ccb) {
-        consumer->consume_callback(topic, partition, 1000, &ex_consume_cb, &use_ccb);
-      } else {
+      // if (use_ccb) {
+      //   consumer->consume_callback(topic, partition, 1000, &ex_consume_cb, &use_ccb);
+      // } else {
         RdKafka::Message *msg = consumer->consume(topic, partition, 1000);
         msg_consume(msg, NULL);
         delete msg;
-      }
+      // }
       consumer->poll(0);
     }
 
@@ -606,4 +599,10 @@ Command:
 -t raw ... topic "raw"
 -p 0   ... partition 0
 -o end ... offset end (read most recent messages)
+
+for -o,
+"end" ignores messages that were in the queue before the consumer starts up
+"beginning" takes messages from the beginning of time, which weren't deleted for some reason
+"stored"
+default
 */

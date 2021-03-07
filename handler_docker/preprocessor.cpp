@@ -2,7 +2,7 @@
 #include <vector>
 #include <librdkafka/rdkafka.h>
 #include <unistd.h>
-#include <jansson.h>
+#include "jansson_parser.h"
 
 static volatile sig_atomic_t run = 1;
 
@@ -26,33 +26,11 @@ static int is_printable(const char *buf, size_t size) {
     return 1;
 }
 
-//static int shutdown = 0;
-static void old_msg_process(rd_kafka_message_t *rkm) {
-    // Print the message value/payload.
-    if (rkm->payload && is_printable((const char *)rkm->payload, rkm->len)) {
-        printf(" Value: %.*s\n", (int)rkm->len, (const char *)rkm->payload);
-
-        json_error_t json_err;
-        json_t *json = json_loadb((const char *)rkm->payload, rkm->len, JSON_ALLOW_NUL, &json_err);
-        
-        if (!json) {
-            std::cout << "failed to convert message to json" << std::endl;
-        } else {
-            std::cout << "Message has successfully been converted to json." << std::endl;
-            
-
-            json_decref(json);
-        }
-    }
-    else if (rkm->payload) {
-        printf(" Value: (%d bytes)\n", (int)rkm->len);
-    }
-}
-
 static void process_message(json_t *json) {
-    std::cout << "process message" << std::endl;
+    print_json(json);
 }
 
+// Credit: https://github.com/edenhill/librdkafka/blob/master/examples/consumer.c
 void consume_loop(rd_kafka_t *rk, rd_kafka_topic_partition_list_t *subscriptions) {
     rd_kafka_resp_err_t err;
 
@@ -90,7 +68,6 @@ void consume_loop(rd_kafka_t *rk, rd_kafka_topic_partition_list_t *subscriptions
             }
         }
 
-        // old_msg_process(rkm);
         rd_kafka_message_destroy(rkm);
         running = false;
     }
@@ -165,8 +142,8 @@ int main(int argc, char const *argv[])
 }
 
 /*
-Works with librdkafka and jansson:
-/usr/bin/clang++ -O3 -Wall preprocessor.cpp -std=c++11 -lrdkafka -lpthread -lz -lstdc++ -ljansson -o preprocessor
+Works with librdkafka and jansson and jansson_parser:
+/usr/bin/clang++ -O3 -Wall jansson_parser.cpp preprocessor.cpp -std=c++11 -lrdkafka -lpthread -lz -lstdc++ -ljansson -o preprocessor
 
 */
 

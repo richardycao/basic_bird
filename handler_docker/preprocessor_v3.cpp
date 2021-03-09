@@ -56,6 +56,8 @@ void msg_consume(RdKafka::Message* message, void* opaque) {
   std::string errors;
 
   bool parse_success;
+  std::string::size_type sz;
+
   switch (message->err()) {
     case RdKafka::ERR__TIMED_OUT:
       break;
@@ -79,33 +81,58 @@ void msg_consume(RdKafka::Message* message, void* opaque) {
         //   [](Json::Value pair) -> Json::Value { return Json::Value({pair[0], pair[1]}); });
 
         // can't iterate backwards over a Json array for some reason. It breaks at runtime and is un-interruptable.
-        std::string::size_type sz;
+        
         for (Json::Value::ArrayIndex i = 0; i < bid_orders.size(); i++) {
           bids.insert({std::stof(bid_orders[i][0].asString(), &sz), std::stof(bid_orders[i][1].asString(), &sz)});
-
-          // std::cout << std::stof(bid_orders[i][0].asString(), &sz) << " | " << std::stof(bid_orders[i][1].asString(), &sz) << std::endl;
-          //std::cout << bid_orders[i] << std::endl;
         }
         for (Json::Value::ArrayIndex i = 0; i < ask_orders.size(); i++) {
           asks.insert({std::stof(ask_orders[i][0].asString(), &sz), std::stof(ask_orders[i][1].asString(), &sz)});
-
-          // std::cout << std::stof(ask_orders[i][0].asString(), &sz) << " | " << std::stof(ask_orders[i][1].asString(), &sz) << std::endl;
-          //std::cout << ask_orders[i] << std::endl;
         }
-        for (auto itr = bids.begin(); itr != bids.end(); ++itr) {
-          std::cout << itr->first << '\t' << itr->second << '\n';
-        }
-        //std::cout << "Changes: " << changes << std::endl;
+        // for (auto itr = bids.begin(); itr != bids.end(); ++itr) {
+        //   std::cout << itr->first << '\t' << itr->second << '\n';
+        // }
       } else if (type.compare("l2update") == 0) {
         // update order book
-      } else {
-        // subscribe message
-      }
-      
+        auto changes = root["changes"];
+        for (Json::Value::ArrayIndex i = 0; i < changes.size(); i++) {
+          std::string action = changes[i][0].asString();
+          float price = std::stof(changes[i][1].asString(), &sz);
+          float size = std::stof(changes[i][2].asString(), &sz);
 
-      // printf("%.*s\n",
-      //   static_cast<int>(message->len()),
-      //   static_cast<const char *>(message->payload()));
+          if (action.compare("buy") == 0) {
+            // if key is present, 
+              // if size is 0, pop
+              // else update the value
+            // else
+              // if size is 0, do nothing
+              // else insert the key,value
+
+            if (bids.find(price) == bids.end()) {
+              if (size == 0)
+                bids.erase(price);
+              else
+                bids[price] = size;
+            } else {
+              if (size != 0)
+                bids.insert({price, size});
+            }
+          } else if (action.compare("sell") == 0) {
+            // same
+            if (asks.find(price) == asks.end()) {
+              if (size == 0)
+                asks.erase(price);
+              else
+                asks[price] = size;
+            } else {
+              if (size != 0)
+                asks.insert({price, size});
+            }
+          }
+        }
+      std::cout << bids.rbegin()->first << " | " << asks.begin()->first << std::endl;
+      } else {
+        // subscribe message - do nothing for now
+      }
       break;
     }
     case RdKafka::ERR__PARTITION_EOF: // Last message

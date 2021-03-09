@@ -17,12 +17,11 @@ class Predictor(object):
     def run(self):
         for msg in self.receiver:
             print(msg.value.decode("utf-8"))
-            print("\n")
             #message = msg.value
             #print(message)
 
 if __name__ == "__main__":
-    c = Predictor(topic='processed')
+    c = Predictor(topic='processed2')
     c.run()
     
     

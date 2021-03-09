@@ -47,7 +47,9 @@ class HashPartitionerCb : public RdKafka::PartitionerCb {
 std::map<float, float> bids;
 std::map<float, float> asks;
 
-void msg_consume(RdKafka::Message* message, void* opaque) {
+bool msg_consume(RdKafka::Message* message, void* opaque) {
+  bool ok = false;
+
   Json::CharReaderBuilder builder;
   Json::CharReader *reader = builder.newCharReader();
 
@@ -81,16 +83,12 @@ void msg_consume(RdKafka::Message* message, void* opaque) {
         //   [](Json::Value pair) -> Json::Value { return Json::Value({pair[0], pair[1]}); });
 
         // can't iterate backwards over a Json array for some reason. It breaks at runtime and is un-interruptable.
-        
         for (Json::Value::ArrayIndex i = 0; i < bid_orders.size(); i++) {
           bids.insert({std::stof(bid_orders[i][0].asString(), &sz), std::stof(bid_orders[i][1].asString(), &sz)});
         }
         for (Json::Value::ArrayIndex i = 0; i < ask_orders.size(); i++) {
           asks.insert({std::stof(ask_orders[i][0].asString(), &sz), std::stof(ask_orders[i][1].asString(), &sz)});
         }
-        // for (auto itr = bids.begin(); itr != bids.end(); ++itr) {
-        //   std::cout << itr->first << '\t' << itr->second << '\n';
-        // }
       } else if (type.compare("l2update") == 0) {
         // update order book
         auto changes = root["changes"];
@@ -100,13 +98,6 @@ void msg_consume(RdKafka::Message* message, void* opaque) {
           float size = std::stof(changes[i][2].asString(), &sz);
 
           if (action.compare("buy") == 0) {
-            // if key is present, 
-              // if size is 0, pop
-              // else update the value
-            // else
-              // if size is 0, do nothing
-              // else insert the key,value
-
             if (bids.find(price) == bids.end()) {
               if (size == 0)
                 bids.erase(price);
@@ -117,7 +108,6 @@ void msg_consume(RdKafka::Message* message, void* opaque) {
                 bids.insert({price, size});
             }
           } else if (action.compare("sell") == 0) {
-            // same
             if (asks.find(price) == asks.end()) {
               if (size == 0)
                 asks.erase(price);
@@ -129,7 +119,8 @@ void msg_consume(RdKafka::Message* message, void* opaque) {
             }
           }
         }
-      std::cout << bids.rbegin()->first << " | " << asks.begin()->first << std::endl;
+      // std::cout << bids.rbegin()->first << " | " << asks.begin()->first << std::endl;
+      ok = true;
       } else {
         // subscribe message - do nothing for now
       }
@@ -149,6 +140,7 @@ void msg_consume(RdKafka::Message* message, void* opaque) {
       std::cerr << "Consume failed: " << message->errstr() << std::endl;
       run = 0;
   }
+  return ok;
 }
 
 int main(int argc, char **argv) {
@@ -279,28 +271,30 @@ int main(int argc, char **argv) {
   while (run) {
     // Consume message
     RdKafka::Message *msg = consumer->consume(topic_in, partition_in, 1000);
-    msg_consume(msg, NULL);
+    bool consume_success = msg_consume(msg, NULL);
 
-    // Produce message
-    // RdKafka::Headers *headers = RdKafka::Headers::create();
-    // headers->add("my header", "header value");
-    // headers->add("other header", "yes");
+    if (consume_success) {
+      // Produce message
+      RdKafka::Headers *headers = RdKafka::Headers::create();
+      // headers->add("my header", "header value");
+      // headers->add("other header", "yes");
 
-    // std::string line = "produced message";
-    // RdKafka::ErrorCode resp =
-    //   producer->produce(topic_str_out, partition_out,
-    //                     RdKafka::Producer::RK_MSG_COPY, // copy payload
-    //                     const_cast<char *>(line.c_str()), line.size(),
-    //                     NULL, 0, 0,
-    //                     headers,
-    //                     NULL);
-    // if (resp != RdKafka::ERR_NO_ERROR) {
-    //   std::cerr << "% Produce failed: " << RdKafka::err2str(resp) << std::endl;
-    //   delete headers; // Headers are automatically deleted on produce() success.
-    // } else {
-    //   std::cerr << "% Produced message (" << line.size() << " bytes)" << std::endl;
-    // }
-    // producer->poll(0);
+      std::string line = std::to_string(bids.rbegin()->first) + " | " + std::to_string(asks.begin()->first);
+      RdKafka::ErrorCode resp =
+        producer->produce(topic_str_out, partition_out,
+                          RdKafka::Producer::RK_MSG_COPY, // copy payload
+                          const_cast<char *>(line.c_str()), line.size(),
+                          NULL, 0, 0,
+                          headers,
+                          NULL);
+      if (resp != RdKafka::ERR_NO_ERROR) {
+        std::cerr << "% Produce failed: " << RdKafka::err2str(resp) << std::endl;
+        delete headers; // Headers are automatically deleted on produce() success.
+      } else {
+        //std::cerr << "% Produced message (" << line.size() << " bytes)" << std::endl;
+      }
+      producer->poll(0);
+    }
 
     delete msg;
     consumer->poll(0);
@@ -330,5 +324,5 @@ Works with librdkafka and jansson and jansson_parser:
 /usr/bin/clang++ -O3 -Wall preprocessor_v3.cpp -std=c++11 -lrdkafka++ -lpthread -lz -lstdc++ -ljsoncpp -o preprocessor_v3
 
 Command:
-./preprocessor_v3 -t raw2 -u processed -p 0
+./preprocessor_v3 -t raw2 -u processed2 -p 0
 */

@@ -46,6 +46,10 @@ class HashPartitionerCb : public RdKafka::PartitionerCb {
 
 std::map<float, float> bids;
 std::map<float, float> asks;
+float highest_bid_price;
+float highest_bid_size;
+float lowest_ask_price;
+float lowest_ask_size;
 
 bool msg_consume(RdKafka::Message* message, void* opaque) {
   bool ok = false;
@@ -89,6 +93,14 @@ bool msg_consume(RdKafka::Message* message, void* opaque) {
         for (Json::Value::ArrayIndex i = 0; i < ask_orders.size(); i++) {
           asks.insert({std::stof(ask_orders[i][0].asString(), &sz), std::stof(ask_orders[i][1].asString(), &sz)});
         }
+
+        highest_bid_price = bids.rbegin()->first;
+        highest_bid_size = bids.rbegin()->second;
+        lowest_ask_price = asks.begin()->first;
+        lowest_ask_size = asks.begin()->second;
+
+        ok = true;
+        
       } else if (type.compare("l2update") == 0) {
         // update order book
         auto changes = root["changes"];
@@ -97,10 +109,10 @@ bool msg_consume(RdKafka::Message* message, void* opaque) {
           float price = std::stof(changes[i][1].asString(), &sz);
           float size = std::stof(changes[i][2].asString(), &sz);
 
-          std::cout << action << " " << std::to_string(price) << " " << std::to_string(size) << std::endl;
+          //std::cout << action << " " << std::to_string(price) << " " << std::to_string(size) << std::endl;
           
           if (action.compare("buy") == 0) {
-            if (bids.find(price) == bids.end()) {
+            if (bids.find(price) != bids.end()) {
               if (size == 0)
                 bids.erase(price);
               else
@@ -110,7 +122,7 @@ bool msg_consume(RdKafka::Message* message, void* opaque) {
                 bids.insert({price, size});
             }
           } else if (action.compare("sell") == 0) {
-            if (asks.find(price) == asks.end()) {
+            if (asks.find(price) != asks.end()) {
               if (size == 0)
                 asks.erase(price);
               else
@@ -121,8 +133,18 @@ bool msg_consume(RdKafka::Message* message, void* opaque) {
             }
           }
         }
-      //std::cout << bids.rbegin()->first << " | " << asks.begin()->first << std::endl;
-      ok = true;
+
+        // if the bid-ask spread has changed, do produce a message
+        if (highest_bid_price != bids.rbegin()->first ||
+            highest_bid_size != bids.rbegin()->second ||
+            lowest_ask_price != asks.begin()->first ||
+            lowest_ask_size != asks.begin()->second) {
+              highest_bid_price = bids.rbegin()->first;
+              highest_bid_size = bids.rbegin()->second;
+              lowest_ask_price = asks.begin()->first;
+              lowest_ask_size = asks.begin()->second;
+              ok = true;
+            }
       } else {
         // subscribe message - do nothing for now
       }
@@ -273,15 +295,15 @@ int main(int argc, char **argv) {
   while (run) {
     // Consume message
     RdKafka::Message *msg = consumer->consume(topic_in, partition_in, 1000);
-    bool consume_success = msg_consume(msg, NULL);
+    bool produce_message = msg_consume(msg, NULL);
 
-    if (consume_success) {
+    if (produce_message) {
       // Produce message
       RdKafka::Headers *headers = RdKafka::Headers::create();
       // headers->add("my header", "header value");
       // headers->add("other header", "yes");
 
-      std::string line = std::to_string(bids.rbegin()->first) + " | " + std::to_string(asks.begin()->first);
+      std::string line = std::to_string(bids.rbegin()->first) + " " + std::to_string(bids.rbegin()->second) + " | " + std::to_string(asks.begin()->first) + " " + std::to_string(asks.begin()->second);
       RdKafka::ErrorCode resp =
         producer->produce(topic_str_out, partition_out,
                           RdKafka::Producer::RK_MSG_COPY, // copy payload

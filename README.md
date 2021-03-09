@@ -10,4 +10,4 @@
 
 `./handler_docker/preprocessor_v3 -t test -u processed2 -p 0` Preprocessor start waiting on messages from the producer.
 
-`python3.7 local/producer.py` Producer begins producing messages for the preprocessor
+`python3.7 local/producer_v2.py` Producer begins producing messages for the preprocessor

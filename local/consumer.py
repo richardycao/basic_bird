@@ -16,7 +16,7 @@ class Consumer(object):
             auto_offset_reset='earliest',
             enable_auto_commit=True,
             group_id='test1',
-            value_deserializer=lambda x: loads(x.decode('utf-8'))
+            value_deserializer=lambda x: x#loads(x.decode('utf-8'))
         )
         self.bid_breakpoints = bid_breakpoints
         self.ask_breakpoints = ask_breakpoints

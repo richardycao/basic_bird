@@ -11,7 +11,10 @@ RUN apt-get -y install clang
 RUN apt-get -y install librdkafka-dev
 
 # Install Jansson for C++
-RUN apt-get install -y libjansson-dev
+# RUN apt-get install -y libjansson-dev
+
+# Install jsoncpp for C++
+RUN apt-get install -y libjsoncpp-dev
 
 # Copy the current folder which contains C++ source code to the Docker image under /usr/src
 COPY . /usr/src/preprocessor

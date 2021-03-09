@@ -4,6 +4,9 @@
 #include <cstdio>
 #include <csignal>
 #include <cstring>
+#include <map>
+#include <vector>
+#include <algorithm>
 
 #ifdef _WIN32
 #include "../win32/wingetopt.h"
@@ -14,6 +17,7 @@
 #endif
 
 #include <librdkafka/rdkafkacpp.h>
+#include <json/json.h>
 
 static volatile sig_atomic_t run = 1;
 static bool exit_eof = false;
@@ -22,67 +26,9 @@ static void sigterm (int sig) {
   run = 0;
 }
 
-class ExampleDeliveryReportCb : public RdKafka::DeliveryReportCb {
- public:
-  void dr_cb (RdKafka::Message &message) {
-    std::string status_name;
-    switch (message.status())
-      {
-      case RdKafka::Message::MSG_STATUS_NOT_PERSISTED:
-        status_name = "NotPersisted";
-        break;
-      case RdKafka::Message::MSG_STATUS_POSSIBLY_PERSISTED:
-        status_name = "PossiblyPersisted";
-        break;
-      case RdKafka::Message::MSG_STATUS_PERSISTED:
-        status_name = "Persisted";
-        break;
-      default:
-        status_name = "Unknown?";
-        break;
-      }
-    std::cout << "Message delivery for (" << message.len() << " bytes): " <<
-      status_name << ": " << message.errstr() << std::endl;
-    if (message.key())
-      std::cout << "Key: " << *(message.key()) << ";" << std::endl;
-  }
-};
-
-class ExampleEventCb : public RdKafka::EventCb {
- public:
-  void event_cb (RdKafka::Event &event) {
-    switch (event.type())
-    {
-      case RdKafka::Event::EVENT_ERROR:
-        if (event.fatal()) {
-          std::cerr << "FATAL ";
-          run = 0;
-        }
-        std::cerr << "ERROR (" << RdKafka::err2str(event.err()) << "): " <<
-            event.str() << std::endl;
-        break;
-
-      case RdKafka::Event::EVENT_STATS:
-        std::cerr << "\"STATS\": " << event.str() << std::endl;
-        break;
-
-      case RdKafka::Event::EVENT_LOG:
-        fprintf(stderr, "LOG-%i-%s: %s\n",
-                event.severity(), event.fac().c_str(), event.str().c_str());
-        break;
-
-      default:
-        std::cerr << "EVENT " << event.type() <<
-            " (" << RdKafka::err2str(event.err()) << "): " <<
-            event.str() << std::endl;
-        break;
-    }
-  }
-};
-
 /* Use of this partitioner is pretty pointless since no key is provided
  * in the produce() call. */
-class MyHashPartitionerCb : public RdKafka::PartitionerCb {
+class HashPartitionerCb : public RdKafka::PartitionerCb {
  public:
   int32_t partitioner_cb (const RdKafka::Topic *topic, const std::string *key,
                           int32_t partition_cnt, void *msg_opaque) {
@@ -98,53 +44,81 @@ class MyHashPartitionerCb : public RdKafka::PartitionerCb {
   }
 };
 
-void msg_consume(RdKafka::Message* message, void* opaque) {
-  const RdKafka::Headers *headers;
+std::map<float, float> bids;
+std::map<float, float> asks;
 
+void msg_consume(RdKafka::Message* message, void* opaque) {
+  Json::CharReaderBuilder builder;
+  Json::CharReader *reader = builder.newCharReader();
+
+  Json::Value root;
+  std::string msg_str;
+  std::string errors;
+
+  bool parse_success;
   switch (message->err()) {
     case RdKafka::ERR__TIMED_OUT:
       break;
-
     case RdKafka::ERR_NO_ERROR:
-      /* Real message */
-      std::cout << "Read msg at offset " << message->offset() << std::endl;
-      if (message->key()) {
-        std::cout << "Key: " << *message->key() << std::endl;
+    {
+      msg_str = static_cast<const char *>(message->payload());
+      parse_success = reader->parse(msg_str.c_str(), msg_str.c_str() + msg_str.size(), &root, &errors);
+      if (!parse_success) {
+          std::cout << "Failed to parse message" << std::endl;
+          break;
       }
-      headers = message->headers();
-      if (headers) {
-        std::vector<RdKafka::Headers::Header> hdrs = headers->get_all();
-        for (size_t i = 0 ; i < hdrs.size() ; i++) {
-          const RdKafka::Headers::Header hdr = hdrs[i];
 
-          if (hdr.value() != NULL)
-            printf(" Header: %s = \"%.*s\"\n",
-                   hdr.key().c_str(),
-                   (int)hdr.value_size(), (const char *)hdr.value());
-          else
-            printf(" Header:  %s = NULL\n", hdr.key().c_str());
+      std::string type = root["type"].asString();
+      if (type.compare("snapshot") == 0) {
+        // build order book
+        auto bid_orders = root["bids"];
+        auto ask_orders = root["asks"];
+
+        // worry about parallelizing later
+        // std::transform(asks.begin(), asks.end(), asks.begin(), 
+        //   [](Json::Value pair) -> Json::Value { return Json::Value({pair[0], pair[1]}); });
+
+        // can't iterate backwards over a Json array for some reason. It breaks at runtime and is un-interruptable.
+        std::string::size_type sz;
+        for (Json::Value::ArrayIndex i = 0; i < bid_orders.size(); i++) {
+          bids.insert({std::stof(bid_orders[i][0].asString(), &sz), std::stof(bid_orders[i][1].asString(), &sz)});
+
+          // std::cout << std::stof(bid_orders[i][0].asString(), &sz) << " | " << std::stof(bid_orders[i][1].asString(), &sz) << std::endl;
+          //std::cout << bid_orders[i] << std::endl;
         }
-      }
-      printf("%.*s\n",
-        static_cast<int>(message->len()),
-        static_cast<const char *>(message->payload()));
-      break;
+        for (Json::Value::ArrayIndex i = 0; i < ask_orders.size(); i++) {
+          asks.insert({std::stof(ask_orders[i][0].asString(), &sz), std::stof(ask_orders[i][1].asString(), &sz)});
 
-    case RdKafka::ERR__PARTITION_EOF:
-      /* Last message */
+          // std::cout << std::stof(ask_orders[i][0].asString(), &sz) << " | " << std::stof(ask_orders[i][1].asString(), &sz) << std::endl;
+          //std::cout << ask_orders[i] << std::endl;
+        }
+        for (auto itr = bids.begin(); itr != bids.end(); ++itr) {
+          std::cout << itr->first << '\t' << itr->second << '\n';
+        }
+        //std::cout << "Changes: " << changes << std::endl;
+      } else if (type.compare("l2update") == 0) {
+        // update order book
+      } else {
+        // subscribe message
+      }
+      
+
+      // printf("%.*s\n",
+      //   static_cast<int>(message->len()),
+      //   static_cast<const char *>(message->payload()));
+      break;
+    }
+    case RdKafka::ERR__PARTITION_EOF: // Last message
       if (exit_eof) {
         run = 0;
       }
       break;
-
     case RdKafka::ERR__UNKNOWN_TOPIC:
     case RdKafka::ERR__UNKNOWN_PARTITION:
       std::cerr << "Consume failed: " << message->errstr() << std::endl;
       run = 0;
       break;
-
-    default:
-      /* Errors */
+    default: // Error
       std::cerr << "Consume failed: " << message->errstr() << std::endl;
       run = 0;
   }
@@ -155,7 +129,7 @@ int main(int argc, char **argv) {
   std::string errstr;
   int64_t start_offset = RdKafka::Topic::OFFSET_BEGINNING;
   int opt;
-  MyHashPartitionerCb hash_partitioner;
+  HashPartitionerCb hash_partitioner;
 
   // Consumer objects
   std::string topic_str_in;
@@ -264,10 +238,6 @@ int main(int argc, char **argv) {
   }
 
   /* ============================== Producer setup ============================== */
-  ExampleDeliveryReportCb ex_dr_cb;
-
-  // Set delivery report callback
-  conf_out->set("dr_cb", &ex_dr_cb, errstr);
   conf_out->set("default_topic_conf", tconf_out, errstr);
 
   // Create producer using accumulated global configuration.
@@ -279,11 +249,32 @@ int main(int argc, char **argv) {
   std::cout << "% Created producer " << producer->name() << std::endl;
 
   /* ============================== Run ============================== */
-
-  // Consume messages
   while (run) {
+    // Consume message
     RdKafka::Message *msg = consumer->consume(topic_in, partition_in, 1000);
     msg_consume(msg, NULL);
+
+    // Produce message
+    // RdKafka::Headers *headers = RdKafka::Headers::create();
+    // headers->add("my header", "header value");
+    // headers->add("other header", "yes");
+
+    // std::string line = "produced message";
+    // RdKafka::ErrorCode resp =
+    //   producer->produce(topic_str_out, partition_out,
+    //                     RdKafka::Producer::RK_MSG_COPY, // copy payload
+    //                     const_cast<char *>(line.c_str()), line.size(),
+    //                     NULL, 0, 0,
+    //                     headers,
+    //                     NULL);
+    // if (resp != RdKafka::ERR_NO_ERROR) {
+    //   std::cerr << "% Produce failed: " << RdKafka::err2str(resp) << std::endl;
+    //   delete headers; // Headers are automatically deleted on produce() success.
+    // } else {
+    //   std::cerr << "% Produced message (" << line.size() << " bytes)" << std::endl;
+    // }
+    // producer->poll(0);
+
     delete msg;
     consumer->poll(0);
   }
@@ -309,8 +300,8 @@ int main(int argc, char **argv) {
 
 /*
 Works with librdkafka and jansson and jansson_parser:
-/usr/bin/clang++ -O3 -Wall preprocessor_v3.cpp -std=c++11 -lrdkafka++ -lpthread -lz -lstdc++ -o preprocessor_v3
+/usr/bin/clang++ -O3 -Wall preprocessor_v3.cpp -std=c++11 -lrdkafka++ -lpthread -lz -lstdc++ -ljsoncpp -o preprocessor_v3
 
 Command:
-./preprocessor_v3 -t raw -u processed -p 0
+./preprocessor_v3 -t raw2 -u processed -p 0
 */

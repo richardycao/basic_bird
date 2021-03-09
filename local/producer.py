@@ -47,7 +47,7 @@ def on_message(ws, message):
     #     'time': data['time']
     # }
 
-    producer.send('raw', value=data)
+    producer.send('raw2', value=data)
 
 def on_error(ws, error):
     print(error)

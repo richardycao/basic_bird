@@ -97,6 +97,8 @@ bool msg_consume(RdKafka::Message* message, void* opaque) {
           float price = std::stof(changes[i][1].asString(), &sz);
           float size = std::stof(changes[i][2].asString(), &sz);
 
+          std::cout << action << " " << std::to_string(price) << " " << std::to_string(size) << std::endl;
+          
           if (action.compare("buy") == 0) {
             if (bids.find(price) == bids.end()) {
               if (size == 0)
@@ -119,7 +121,7 @@ bool msg_consume(RdKafka::Message* message, void* opaque) {
             }
           }
         }
-      // std::cout << bids.rbegin()->first << " | " << asks.begin()->first << std::endl;
+      //std::cout << bids.rbegin()->first << " | " << asks.begin()->first << std::endl;
       ok = true;
       } else {
         // subscribe message - do nothing for now
@@ -320,9 +322,9 @@ int main(int argc, char **argv) {
 }
 
 /*
-Works with librdkafka and jansson and jansson_parser:
+Works with librdkafka and jsoncpp:
 /usr/bin/clang++ -O3 -Wall preprocessor_v3.cpp -std=c++11 -lrdkafka++ -lpthread -lz -lstdc++ -ljsoncpp -o preprocessor_v3
 
 Command:
-./preprocessor_v3 -t raw2 -u processed2 -p 0
+./preprocessor_v3 -t test -u processed2 -p 0 -o end
 */

@@ -91,7 +91,7 @@ class Consumer(object):
             #     self.t += 1
 
 if __name__ == "__main__":
-    c = Consumer(topic='raw', bid_breakpoints=[-0.008, -0.006, -0.004, -0.002], ask_breakpoints=[0.002, 0.004, 0.006, 0.008], max_width=0.01)
+    c = Consumer(topic='test', bid_breakpoints=[-0.008, -0.006, -0.004, -0.002], ask_breakpoints=[0.002, 0.004, 0.006, 0.008], max_width=0.01)
     c.run()
     
     

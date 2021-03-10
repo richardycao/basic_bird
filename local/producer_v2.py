@@ -9,11 +9,7 @@ except ImportError:
     import _thread as thread
 import time
 
-bootstrap_servers = "localhost:9092"
-topic = 'confluent-kafka-topic'
-conf = {
-  'bootstrap.servers': 'localhost:9092'
-}
+conf = { 'bootstrap.servers': 'localhost:9092' }
 producer = Producer(**conf)
 
 params = {
@@ -28,7 +24,7 @@ params = {
 
 def on_message(ws, message):
     global producer
-    data = json.loads(message)
+    #data = json.loads(message)
 
     producer.produce('test', value=message)
     producer.poll(0)

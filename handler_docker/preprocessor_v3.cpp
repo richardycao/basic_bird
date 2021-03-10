@@ -26,8 +26,7 @@ static void sigterm (int sig) {
   run = 0;
 }
 
-/* Use of this partitioner is pretty pointless since no key is provided
- * in the produce() call. */
+// Use of this partitioner is pretty pointless since no key is provided in the produce() call.
 class HashPartitionerCb : public RdKafka::PartitionerCb {
  public:
   int32_t partitioner_cb (const RdKafka::Topic *topic, const std::string *key,
@@ -82,10 +81,6 @@ bool msg_consume(RdKafka::Message* message, void* opaque) {
         auto bid_orders = root["bids"];
         auto ask_orders = root["asks"];
 
-        // worry about parallelizing later
-        // std::transform(asks.begin(), asks.end(), asks.begin(), 
-        //   [](Json::Value pair) -> Json::Value { return Json::Value({pair[0], pair[1]}); });
-
         // can't iterate backwards over a Json array for some reason. It breaks at runtime and is un-interruptable.
         for (Json::Value::ArrayIndex i = 0; i < bid_orders.size(); i++) {
           bids.insert({std::stof(bid_orders[i][0].asString(), &sz), std::stof(bid_orders[i][1].asString(), &sz)});
@@ -108,8 +103,6 @@ bool msg_consume(RdKafka::Message* message, void* opaque) {
           std::string action = changes[i][0].asString();
           float price = std::stof(changes[i][1].asString(), &sz);
           float size = std::stof(changes[i][2].asString(), &sz);
-
-          //std::cout << action << " " << std::to_string(price) << " " << std::to_string(size) << std::endl;
           
           if (action.compare("buy") == 0) {
             if (bids.find(price) != bids.end()) {

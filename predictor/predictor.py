@@ -4,12 +4,12 @@ import numpy as np
 import sys
 
 class Predictor(object):
-  def __init__(self, topic_in):
+  def __init__(self, topic_in, servers_in):
     self.topic_in = topic_in
     conf_in = {
-      'bootstrap.servers': 'localhost:9092',
+      'bootstrap.servers': servers_in,
       'group.id': 'test1',
-      'session.timeout.ms': 6000,
+      'session.timeout.ms': 30000,
       'auto.offset.reset': 'earliest'
     }
     self.consumer = Consumer(conf_in)
@@ -19,6 +19,7 @@ class Predictor(object):
     try:
       while True:
         msg = self.consumer.poll(timeout=1.0)
+        #print(msg)
         if msg is None:
           continue
         if msg.error():
@@ -32,7 +33,7 @@ class Predictor(object):
       self.consumer.close()
 
 if __name__ == "__main__":
-    c = Predictor(topic_in='processed2')
+    c = Predictor(topic_in='q2', servers_in='kafka0:29092')
     c.run()
     
     

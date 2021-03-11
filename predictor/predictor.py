@@ -2,6 +2,7 @@ from confluent_kafka import Consumer, KafkaException
 from json import loads
 import numpy as np
 import sys
+import datetime
 
 class Predictor(object):
   def __init__(self, topic_in, servers_in):
@@ -24,8 +25,8 @@ class Predictor(object):
         if msg.error():
           raise KafkaException(msg.error())
         else:
-          pass
-          #print(msg.value().decode("utf-8"))
+          #print(datetime.datetime.now(), "====predictor=====")
+          print(msg.value().decode("utf-8"))
     except KeyboardInterrupt:
       sys.stderr.write('%% Aborted by user\n')
     finally:

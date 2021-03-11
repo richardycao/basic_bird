@@ -8,6 +8,7 @@ try:
 except ImportError:
     import _thread as thread
 import time
+import datetime
 
 class Fetcher(object):
     def __init__(self, topic_out, servers_out):
@@ -39,6 +40,9 @@ class Fetcher(object):
             print(json.loads(msg))
 
     def on_message(self, ws, message):
+        # data = json.loads(message)
+        # if data['type'] == 'snapshot':
+        #     print(datetime.datetime.now(), "====producer=====")
         self.producer.produce('q1', value=message, callback=self.delivery_callback)
         self.producer.poll(0)
 

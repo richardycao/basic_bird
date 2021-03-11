@@ -23,7 +23,7 @@ COPY . /usr/src/preprocessor
 WORKDIR /usr/src/preprocessor
 
 # Use Clang to compile the Test.cpp source file
-RUN clang++ -O3 -Wall jansson_parser.cpp preprocessor.cpp -std=c++11 -lrdkafka -lpthread -lz -lstdc++ -ljansson -o preprocessor
+RUN clang++ -O3 -Wall preprocessor_v3.cpp -std=c++11 -lrdkafka++ -lpthread -lz -lstdc++ -ljsoncpp -o preprocessor_v3
 
 # Run the output program from the previous step
-CMD ["./preprocessor"]
+CMD ["./preprocessor_v3"]

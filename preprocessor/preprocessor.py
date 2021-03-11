@@ -115,6 +115,7 @@ class Preprocessor(object):
                     if should_produce:
                         data = self.preprocess(1)
                         if data:
+                            #self.producer.produce(self.topic_out, value=dumps(str(self.highest_bid_price)+" | "+str(self.lowest_ask_price)).encode('utf-8'))
                             self.producer.produce(self.topic_out, value=dumps(data).encode('utf-8'), callback=self.delivery_callback)
                             self.producer.poll(0)
         except KeyboardInterrupt:

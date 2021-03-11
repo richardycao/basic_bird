@@ -1,13 +1,11 @@
 `cd /basic-bird`
 
-`docker-compose build` build the docker containers
+`docker-compose -f docker-compose-kafka.yml build` Builds kafka
 
-`docker-compose up` to start the docker containers
+`docker-compose -f docker-compose-pipeline.yml build` Builds the data pipeline
 
-`python3.7 local/predictor_v2.py` Predictor starts waiting on the preprocessor
+`docker-compose -f docker-compose-kafka.yml up` Starts kafka
 
-`/usr/bin/clang++ -O3 -Wall handler_docker/preprocessor_v3.cpp -std=c++11 -lrdkafka++ -lpthread -lz -lstdc++ -ljsoncpp -o handler_docker/preprocessor_v3` Compiles the preprocessor
+Wait ~1 minute for kafka to start up.
 
-`./handler_docker/preprocessor_v3 -t test -u processed2 -p 0` Preprocessor start waiting on messages from the producer.
-
-`python3.7 local/producer_v2.py` Producer begins producing messages for the preprocessor
+`docker-compose -f docker-compose-pipeline.yml up` Starts the data pipeline

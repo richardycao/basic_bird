@@ -1,0 +1,17 @@
+version: '3.7'
+
+services:
+  producer:
+    build: ./producer
+    container_name: producer
+    depends_on:
+      - preprocessor
+      - predictor
+  preprocessor:
+    build: ./preprocessor
+    container_name: preprocessor
+    depends_on:
+      - predictor
+  predictor:
+    build: ./predictor
+    container_name: predictor

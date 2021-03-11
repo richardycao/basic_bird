@@ -19,13 +19,13 @@ class Predictor(object):
     try:
       while True:
         msg = self.consumer.poll(timeout=1.0)
-        #print(msg)
         if msg is None:
           continue
         if msg.error():
           raise KafkaException(msg.error())
         else:
-          print(msg.value().decode("utf-8"))
+          pass
+          #print(msg.value().decode("utf-8"))
     except KeyboardInterrupt:
       sys.stderr.write('%% Aborted by user\n')
     finally:

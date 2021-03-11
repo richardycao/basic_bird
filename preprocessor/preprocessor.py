@@ -30,6 +30,7 @@ class Preprocessor(object):
         self.lowest_ask_size = 0
     
     def init_order_book(self, message):
+        print('Initializing order book.')
         self.bids = SortedDict(map(lambda x: [float(x[0]), float(x[1])], message['bids']))
         self.asks = SortedDict(map(lambda x: [float(x[0]), float(x[1])], message['asks']))
 
@@ -76,7 +77,7 @@ class Preprocessor(object):
 
     # later, get the size parameter from some constants file
     def preprocess(self, size=10):
-        if len(self.bids) == 0 or len(self.asks) == 0:
+        if len(self.bids) < size or len(self.asks) < size:
             return 
         midpoint = (self.bids.peekitem(-1)[0] + self.asks.peekitem(0)[0]) / 2
 
@@ -93,10 +94,16 @@ class Preprocessor(object):
             should_produce = self.update_order_book(message)
             return should_produce
 
+    def delivery_callback(self, err, msg):
+        if err:
+            print('Delivery_callback failed delivery:', err)
+            print(loads(msg))
+
     def run(self):
         try:
             while True:
                 msg = self.consumer.poll(timeout=1.0)
+
                 if msg is None:
                     continue
                 if msg.error():
@@ -106,15 +113,16 @@ class Preprocessor(object):
                     should_produce = self.msg_consume(message)
 
                     if should_produce:
-                        data = self.preprocess(5)
+                        data = self.preprocess(1)
                         if data:
-                            self.producer.produce(self.topic_out, value=dumps(data).encode('utf-8'))
+                            self.producer.produce(self.topic_out, value=dumps(data).encode('utf-8'), callback=self.delivery_callback)
                             self.producer.poll(0)
         except KeyboardInterrupt:
             sys.stderr.write('%% Aborted by user\n')
         finally:
             # Close down consumer to commit final offsets.
             self.consumer.close()
+            self.producer.flush()
 
 if __name__ == "__main__":
     p = Preprocessor(topic_in='q1', topic_out='q2', servers_in='kafka0:29092', servers_out='kafka0:29092')

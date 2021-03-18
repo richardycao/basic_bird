@@ -6,8 +6,10 @@ import sys
 import datetime
 
 class Executor(object):
-  def __init__(self, topic_in, servers_in):
-    self.client = cbp.PublicClient()
+  def __init__(self, key, secret, passphrase, topic_in, servers_in):
+    auth_client = cbp.AuthenticatedClient(key=key,
+                                          secret=secret,
+                                          passphrase=passphrase)
 
     self.topic_in = topic_in
     conf_in = {
@@ -45,6 +47,14 @@ class Executor(object):
       self.consumer.close()
 
 if __name__ == "__main__":
-    c = Executor(topic_in='q3', servers_in='kafka0:29092')
-    c.run()
+  if len(sys.argv) != 4:
+    print('Please use the following format:')
+    print('python3 executor.py <key> <secret> <passphrase>')
+
+  key = sys.argv[1]
+  secret = sys.argv[2]
+  passphrase = sys.argv[3]
+
+  c = Executor(key=key, secret=secret, passphrase=passphrase, topic_in='q3', servers_in='kafka0:29092')
+  c.run()
     

@@ -7,11 +7,18 @@ services:
     depends_on:
       - preprocessor
       - predictor
+      - executor
   preprocessor:
     build: ./preprocessor
     container_name: preprocessor
     depends_on:
       - predictor
+      - executor
   predictor:
     build: ./predictor
     container_name: predictor
+    depends_on:
+      - executor
+  executor:
+    build: ./executor
+    container_name: executor

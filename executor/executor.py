@@ -19,6 +19,12 @@ class Executor(object):
     self.consumer = Consumer(conf_in)
     self.consumer.subscribe([topic_in])
 
+  def construct_order(self, msg):
+    return 0
+
+  def execute_order(self, order):
+    return 0
+
   def run(self):
     try:
       while True:
@@ -29,6 +35,9 @@ class Executor(object):
           raise KafkaException(msg.error())
         else:
           print(msg.value().decode("utf-8"))
+
+          order = self.construct_order(msg.value().decode("utf-8"))
+          success = self.execute_order(order)
     except KeyboardInterrupt:
       sys.stderr.write('%% Aborted by user\n')
     finally:

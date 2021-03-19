@@ -28,8 +28,7 @@ class session : public std::enable_shared_from_this<session> {
 
 public:
     // Resolver and socket require an io_context
-    explicit session(net::io_context& ioc) 
-      : resolver_(net::make_strand(ioc)), ws_(net::make_strand(ioc)) {}
+    explicit session(net::io_context& ioc) : resolver_(net::make_strand(ioc)), ws_(net::make_strand(ioc)) {}
 
     // Start the asynchronous operation
     void run(char const* host, char const* port, char const* text) {
@@ -40,14 +39,12 @@ public:
         // Look up the domain name
         resolver_.async_resolve(
             host, port,
-            beast::bind_front_handler(
-                &session::on_resolve,
-                shared_from_this()));
+            beast::bind_front_handler(&session::on_resolve, shared_from_this()));
     }
 
+    // Resolve the domain name
     void on_resolve(beast::error_code ec, tcp::resolver::results_type results) {
-        if(ec)
-            return fail(ec, "resolve");
+        if(ec) { return fail(ec, "resolve"); }
 
         // Set the timeout for the operation
         beast::get_lowest_layer(ws_).expires_after(std::chrono::seconds(30));
@@ -55,18 +52,14 @@ public:
         // Make the connection on the IP address we get from a lookup
         beast::get_lowest_layer(ws_).async_connect(
             results,
-            beast::bind_front_handler(
-                &session::on_connect,
-                shared_from_this()));
+            beast::bind_front_handler(&session::on_connect, shared_from_this()));
     }
 
-    void on_connect(beast::error_code ec, tcp::resolver::results_type::endpoint_type ep)
-    {
-        if(ec)
-            return fail(ec, "connect");
+    // After resolving, connect to the IP
+    void on_connect(beast::error_code ec, tcp::resolver::results_type::endpoint_type ep) {
+        if(ec) { return fail(ec, "connect"); }
 
-        // Turn off the timeout on the tcp_stream, because
-        // the websocket stream has its own timeout system.
+        // Turn off the timeout on the tcp_stream, because the websocket stream has its own timeout system.
         beast::get_lowest_layer(ws_).expires_never();
 
         // Set suggested timeout settings for the websocket
@@ -78,8 +71,7 @@ public:
         ws_.set_option(websocket::stream_base::decorator(
             [](websocket::request_type& req) {
                 req.set(http::field::user_agent,
-                    std::string(BOOST_BEAST_VERSION_STRING) +
-                        " websocket-client-async");
+                    std::string(BOOST_BEAST_VERSION_STRING) + " websocket-client-async");
             }));
 
         // Update the host_ string. This will provide the value of the
@@ -88,54 +80,46 @@ public:
         host_ += ':' + std::to_string(ep.port());
 
         // Perform the websocket handshake
-        ws_.async_handshake(host_, "/",
-            beast::bind_front_handler(
-                &session::on_handshake,
-                shared_from_this()));
+        ws_.async_handshake(host_, "/wss",
+            beast::bind_front_handler(&session::on_handshake, shared_from_this()));
     }
 
+    // After connecting to the IP, handshake
     void on_handshake(beast::error_code ec) {
-        if(ec)
-            return fail(ec, "handshake");
+        if(ec) { return fail(ec, "handshake"); }
         
         // Send the message
         ws_.async_write(
             net::buffer(text_),
-            beast::bind_front_handler(
-                &session::on_write,
-                shared_from_this()));
+            beast::bind_front_handler(&session::on_write, shared_from_this()));
     }
 
+    // Once the handshake is complete, send the params in a message
     void on_write(beast::error_code ec, std::size_t bytes_transferred) {
         boost::ignore_unused(bytes_transferred);
 
-        if(ec)
-            return fail(ec, "write");
+        if(ec) { return fail(ec, "write"); }
         
         // Read a message into our buffer
         ws_.async_read(
             buffer_,
-            beast::bind_front_handler(
-                &session::on_read,
-                shared_from_this()));
+            beast::bind_front_handler(&session::on_read, shared_from_this()));
     }
 
+    // When the params are acknowledged, data will come flowing in
     void on_read(beast::error_code ec, std::size_t bytes_transferred) {
         boost::ignore_unused(bytes_transferred);
 
-        if(ec)
-            return fail(ec, "read");
+        if(ec) { return fail(ec, "read"); }
 
         // Close the WebSocket connection
-        ws_.async_close(websocket::close_code::normal,
-            beast::bind_front_handler(
-                &session::on_close,
-                shared_from_this()));
+        ws_.async_close(
+            websocket::close_code::normal,
+            beast::bind_front_handler(&session::on_close, shared_from_this()));
     }
 
     void on_close(beast::error_code ec) {
-        if(ec)
-            return fail(ec, "close");
+        if(ec) { return fail(ec, "close"); }
 
         // If we get here then the connection is closed gracefully
 
@@ -148,9 +132,9 @@ int main(int argc, char** argv) {
     // Check command line arguments.
     if (argc != 4) {
         std::cerr <<
-            "Usage: websocket-client-async <host> <port> <text>\n" <<
+            "Usage: ./producer <host> <port> <text>\n" <<
             "Example:\n" <<
-            "    websocket-client-async echo.websocket.org 80 \"Hello, world!\"\n";
+            "    ./producer echo.websocket.org 80 \"Hello, world!\"\n";
         return EXIT_FAILURE;
     }
     char* host = argv[1];
@@ -163,16 +147,16 @@ int main(int argc, char** argv) {
     // Launch the asynchronous operation
     std::make_shared<session>(ioc)->run(host, port, text);
 
-    // Run the I/O service. The call will return when
-    // the socket is closed.
+    // Run the I/O service. The call will return when the socket is closed.
     ioc.run();
 
     return EXIT_SUCCESS;
 }
 
-
 /*
-works:
+compile:
 /usr/bin/clang++ -O3 -Wall producer.cpp -std=c++11 -lpthread -lz -lstdc++ -o producer
 
+run:
+./producer ws-feed.pro.coinbase.com 443 text
 */

@@ -1,5 +1,9 @@
+//#include "root_certificates.hpp"
+
 #include <boost/beast/core.hpp>
+#include <boost/beast/ssl.hpp>
 #include <boost/beast/websocket.hpp>
+#include <boost/beast/websocket/ssl.hpp>
 #include <boost/asio/strand.hpp>
 #include <cstdlib>
 #include <functional>
@@ -80,7 +84,7 @@ public:
         host_ += ':' + std::to_string(ep.port());
 
         // Perform the websocket handshake
-        ws_.async_handshake(host_, "/wss",
+        ws_.async_handshake(host_, "/",
             beast::bind_front_handler(&session::on_handshake, shared_from_this()));
     }
 
@@ -134,7 +138,7 @@ int main(int argc, char** argv) {
         std::cerr <<
             "Usage: ./producer <host> <port> <text>\n" <<
             "Example:\n" <<
-            "    ./producer echo.websocket.org 80 \"Hello, world!\"\n";
+            "    ./producer echo.websocket.org 443 \"Hello, world!\"\n";
         return EXIT_FAILURE;
     }
     char* host = argv[1];
@@ -143,6 +147,12 @@ int main(int argc, char** argv) {
 
     // The io_context is required for all I/O
     net::io_context ioc;
+
+    // The SSL context is required, and holds certificates
+    //ssl::context ctx{ssl::context::tlsv12_client};
+
+    // This holds the root certificate used for verification
+    //load_root_certificates(ctx);
 
     // Launch the asynchronous operation
     std::make_shared<session>(ioc)->run(host, port, text);

@@ -55,6 +55,9 @@ if __name__ == "__main__":
   secret = sys.argv[2]
   passphrase = sys.argv[3]
 
-  c = Executor(key=key, secret=secret, passphrase=passphrase, topic_in='q3', servers_in='kafka0:29092')
-  c.run()
+  client = cbp.PublicClient()
+  
+
+  #ex = Executor(key=key, secret=secret, passphrase=passphrase, topic_in='q3', servers_in='kafka0:29092')
+  #ex.run()
     

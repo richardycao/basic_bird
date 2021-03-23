@@ -3,7 +3,7 @@
 from module import Module
 import websocket
 import json
-import sys, getopt
+import sys
 try:
     import thread
 except ImportError:

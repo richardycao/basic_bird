@@ -32,9 +32,8 @@ class ModuleCBPWebsocket(Module):
         self.ws.on_open = self.on_open
 
     def on_message(self, ws, message):
-        pass
-        # self.producer.produce(self.topic_out, value=message, callback=self.delivery_callback)
-        # self.producer.poll(0)
+        self.producer.produce(self.topic_out, value=message, callback=self.delivery_callback)
+        self.producer.poll(0)
 
     def on_error(self, ws, error):
         self.producer.flush()

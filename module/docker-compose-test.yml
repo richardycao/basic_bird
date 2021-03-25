@@ -1,0 +1,18 @@
+version: '3.7'
+
+services:
+  stage2:
+    build: ./predictor
+    container_name: stage2
+    depends_on:
+  stage1:
+    build: ./preprocessor
+    container_name: stage1
+    depends_on:
+      - stage2
+  stage0:
+    build: ./producer
+    container_name: stage0
+    depends_on:
+      - stage1
+      - stage2

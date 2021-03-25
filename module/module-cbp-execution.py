@@ -13,6 +13,6 @@ class ModuleCBPExecution(Module):
     def run(self):
         pass
 
-if __name__ == "__main__":
-    m = ModuleCBPExecution(sys.argv[1:])
-    m.run()
+# if __name__ == "__main__":
+#     m = ModuleCBPExecution(sys.argv[1:])
+#     m.run()

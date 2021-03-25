@@ -111,6 +111,6 @@ class ModulePreprocessLevel2(Module):
             self.consumer.close()
             self.producer.flush()
 
-if __name__ == "__main__":
-    m = ModulePreprocessLevel2(sys.argv[1:])
-    m.run()
+# if __name__ == "__main__":
+#     m = ModulePreprocessLevel2(sys.argv[1:])
+#     m.run()

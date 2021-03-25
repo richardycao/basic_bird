@@ -1,5 +1,7 @@
 ## How to use
 
+These instructions are outdated for now.
+
 `cd /basic-bird`
 
 `docker-compose -f docker-compose-kafka.yml build` Builds kafka

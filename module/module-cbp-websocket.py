@@ -51,6 +51,6 @@ class ModuleCBPWebsocket(Module):
     def run(self):
         self.ws.run_forever()
 
-if __name__ == "__main__":
-    m = ModuleCBPWebsocket(sys.argv[1:])
-    m.run()
+# if __name__ == "__main__":
+#     m = ModuleCBPWebsocket(sys.argv[1:])
+#     m.run()

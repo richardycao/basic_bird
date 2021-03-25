@@ -30,6 +30,6 @@ class ModuleMovingAveragePredictor(Module):
             # Close down consumer to commit final offsets.
             self.consumer.close()
 
-if __name__ == "__main__":
-    m = ModuleMovingAveragePredictor(sys.argv[1:])
-    m.run()
+# if __name__ == "__main__":
+#     m = ModuleMovingAveragePredictor(sys.argv[1:])
+#     m.run()

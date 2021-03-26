@@ -1,10 +1,9 @@
+# python3.7 cbp-websocket.py --product_ids BTC-USD --channels ticker --servers-out kafka:29092 --group-id asdf
+
 from hummingbird import Module
-
-# python3.7 cbp-websocket.py -o cbp-websocket-data -t kafka0:29092
-
 import websocket
 import json
-import sys
+import sys, getopt
 try:
     import thread
 except ImportError:
@@ -14,15 +13,18 @@ class CBPWebsocket(Module):
     def __init__(self, args):
         super().__init__(args)
 
-        self.params = {
-                'type': 'subscribe',
-                'product_ids': [
-                    'BTC-USD'
-                ],
-                'channels': [
-                    'level2'
-                ]
-            }
+        self.setInput(False)
+        self.setOutput(True)
+
+        self.add_argument('product_ids', lambda x: x.split(','))
+        self.add_argument('channels', lambda x: x.split(','))
+        self.build()
+
+        self.websocket_params = {
+            'type': 'subscribe',
+            'product_ids': self.args['product_ids'], # e.g. ['BTC-USD']
+            'channels': self.args['channels']        # e.g. ['level2']
+        }
 
         websocket.enableTrace(True)
         self.ws = websocket.WebSocketApp("wss://ws-feed.pro.coinbase.com",
@@ -47,10 +49,11 @@ class CBPWebsocket(Module):
 
     def on_open(self, ws):
         def run(*args):
-            self.ws.send(json.dumps(self.params))
+            self.ws.send(json.dumps(self.websocket_params))
         thread.start_new_thread(run, ())
 
     def run(self):
+        print('run')
         self.ws.run_forever()
 
 if __name__ == "__main__":

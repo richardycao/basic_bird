@@ -1,0 +1,11 @@
+version: '3.7'
+
+services:
+  cbp-websocket-processor:
+    build: modules-python/cbp-websocket-processor
+    container_name: cbp-websocket-processor
+  cbp-websocket:
+    build: modules-python/cbp-websocket
+    container_name: cbp-websocket
+    depends_on:
+      - cbp-websocket-processor

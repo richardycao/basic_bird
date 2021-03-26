@@ -1,10 +1,12 @@
 ## How to use
 
-These instructions are outdated for now.
+Install hummingbird here: https://github.com/richardycao/hummingbird_python
+
+Clone this repo
 
 `cd /basic-bird`
 
-`python3.7 test-pipeline.py` Edit and build the pipeline here
+`python3.7 test-pipeline.py` Example for editing and building a pipeline
 
 `docker-compose -f docker-compose-kafka.yml up` Starts kafka
 

@@ -1,6 +1,6 @@
 # python3.7 module-cbp-execution.py -i moving-average-trades -s kafka0:29092
 
-from module import Module
+from module-old import Module
 from confluent_kafka import Producer, Consumer, KafkaException
 import json
 from json import loads, dumps

@@ -1,6 +1,6 @@
 # python3.7 module-preprocess-level2.py -i cbp-websocket-data -o preprocessed-level2 -s kafka0:29092 -t kafka0:29092
 
-from module import Module
+from module-old import Module
 from confluent_kafka import Producer, Consumer, KafkaException
 import json
 from json import loads, dumps

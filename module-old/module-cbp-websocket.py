@@ -1,6 +1,6 @@
 # python3.7 module-cbp-websocket.py -o cbp-websocket-data -t kafka0:29092
 
-from module import Module
+from module-old import Module
 import websocket
 import json
 import sys

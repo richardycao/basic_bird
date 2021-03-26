@@ -16,8 +16,11 @@ class Pipeline(object):
     tab = ''.join([' ' for _ in range(self.tab_size)])
     return ''.join([tab for _ in range(count)])
 
-  def create(self):
+  def synthesize(self):
     """
+    Create the docker files.
+      - The 'run' command in each Dockerfile should set its arguments based on arguments passed
+        into this Pipeline object.
     Create the docker-compose file for the pipeline
     """
 
@@ -52,6 +55,8 @@ class Pipeline(object):
     os.system('docker-compose -f docker-compose-test.yml build')
 
   def run(self):
+    # Maybe this part should be done manually. Leave it blank for now.
+
     # Run Kafka docker
 
     # Wait

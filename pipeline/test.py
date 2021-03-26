@@ -9,4 +9,4 @@ To do that, just provide the path to the directory that includes the Dockerfile.
 p = Pipeline(
   ['./producer', './preprocessor', './predictor']
 )
-p.create()
+p.generate()

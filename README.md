@@ -10,7 +10,11 @@ This repository, basic_bird, has some of my custom hummingbird Modules, under `/
 
 ## How to use
 
+Install Docker and docker-compose.
+
 Install hummingbird here: https://github.com/richardycao/hummingbird_python
+
+`git clone https://github.com/richardycao/basic_bird.git`
 
 `cd /basic-bird`
 

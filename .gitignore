@@ -1,3 +1,9 @@
+# App-specific files
+*modules-python-strats
+*pipeline-v1.py
+*docker-compose-pipeline-v1.yml
+
+# Generated files
 .DS_Store
 **/.DS_Store
 .idea/*

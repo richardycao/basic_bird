@@ -1,5 +1,3 @@
-# python3.7 cbp-websocket.py --product_ids BTC-USD --channels ticker --servers-out kafka:29092 --group-id asdf
-
 from hummingbird import Module
 import websocket
 import json
@@ -8,6 +6,29 @@ try:
     import thread
 except ImportError:
     import _thread as thread
+
+"""
+Documentation for CBPWebsocket
+
+Description: Short for "Coinbase Pro Websocket". Reads streamed data from the
+             Coinbase Pro websocket for a variety of channels, such as level2,
+             ticker, heartbeat, etc. Sends the data to a Kafka partition for
+             load balancing before being serviced by the next module.
+
+Parameters:
+    product_ids: comma-separated product ids from Coinbase Pro API.
+                 e.g. 'BTC-USD,XLM-USD'
+    channels   : comma-separated channels from Coinbase Pro API
+
+Message Format:
+    Input: N/A
+    Output: See https://docs.pro.coinbase.com/?python#channels
+
+Command:
+    python3 cbp-websocket.py --product_ids <product ids> --channels <channels>
+    e.g. python3 cbp-websocket.py --product_ids BTC-USD,XLM-USD --channels level2,ticker
+
+"""
 
 class CBPWebsocket(Module):
     def __init__(self, args):
@@ -35,7 +56,7 @@ class CBPWebsocket(Module):
         self.ws.on_open = self.on_open
 
     def on_message(self, ws, message):
-        #print(message)
+        #print(json.dumps(message).encode('utf-8'))
         self.send(message)
 
     def on_error(self, ws, error):

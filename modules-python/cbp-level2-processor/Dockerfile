@@ -12,4 +12,4 @@ RUN pip3 uninstall hummingbird
 RUN pip3 install git+https://github.com/richardycao/hummingbird_python.git#egg=hummingbird
 
 COPY *.py .
-CMD python3 cbp-websocket.py --topics-in test1-0 --topics-out test1-1 --product_ids BTC-USD --channels ticker --servers-out localhost:9092
+CMD python3 cbp-level2-processor.py --topics-in test1-1 --topics-out test1-2 --servers-in localhost:9092 --servers-out localhost:9092

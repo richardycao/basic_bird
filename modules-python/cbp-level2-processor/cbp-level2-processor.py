@@ -1,20 +1,37 @@
-# python3.7 cbp-websocket-processor.py
-
 from hummingbird import Module
-from confluent_kafka import Producer, Consumer, KafkaException
-import json
-from json import loads, dumps
 import numpy as np
 from sortedcontainers import SortedDict
 import sys
 
-class CBPWebsocketProcessor(Module):
+"""
+Documentation for CBPLevel2Processor
+
+Description: Short for "Coinbase Pro Websocket Processor". Reads load-balanced
+             websocket data for the level2 channel. Maintains a real-time order
+             book. Sends a message of the 10 highest bids and 10 lowest asks.
+
+Parameters:
+    None yet.
+
+Message Format:
+    Input: See https://docs.pro.coinbase.com/?python#channels
+    Output:
+        {
+            TODO
+        }
+
+Command:
+    python3 cbp-level2-processor.py
+    e.g. python3 cbp-level2-processor.py
+
+"""
+
+class CBPLevel2Processor(Module):
     def __init__(self, args):
         super().__init__(args)
 
         self.setInput(True)
         self.setOutput(True)
-
         self.build()
 
         self.bids = SortedDict({})
@@ -71,7 +88,6 @@ class CBPWebsocketProcessor(Module):
 
         return send
 
-    # later, get the size parameter from some constants file
     def process(self, size=10):
         if len(self.bids) < size or len(self.asks) < size:
             return 
@@ -103,14 +119,13 @@ class CBPWebsocketProcessor(Module):
                     #     data = self.process(1)
                     #     if data:
                     #         pass
-                            #self.producer.produce(self.topic_out, value=dumps(str(self.highest_bid_price)+" | "+str(self.lowest_ask_price)).encode('utf-8'))
-                            # self.producer.produce(self.topic_out, value=dumps(data).encode('utf-8'), callback=self.delivery_callback)
-                            # self.producer.poll(0)
+                    #         # self.producer.produce(self.topic_out, value=dumps(str(self.highest_bid_price)+" | "+str(self.lowest_ask_price)).encode('utf-8'))
+                    #         self.send(data)
         except KeyboardInterrupt:
             sys.stderr.write('%% Aborted by user\n')
         finally:
             self.closeIO()
 
 if __name__ == "__main__":
-    c = CBPWebsocketProcessor(sys.argv[1:])
+    c = CBPLevel2Processor(sys.argv[1:])
     c.run()

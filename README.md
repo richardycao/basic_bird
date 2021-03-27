@@ -1,6 +1,6 @@
 ## What is this?
 
-TL;DR A testing repository for my cryptocurrency trading framework.
+TL;DR A testing repository for a cryptocurrency trading framework.
 
 The hummingbird Python library (https://github.com/richardycao/hummingbird_python) is a framework for building modular data pipelines, using the hummingbird Module, to trade cryptocurrencies. Developers can code custom implementations of the hummingbird Module, and share them publicly. All other developers can integrate publicly available modules into their own pipelines. Individual modules are run on Docker containers, eliminating any worries about dependencies. They send messages to each other using the Kafka messaging broker, simulating a pipeline.
 
@@ -10,9 +10,11 @@ This repository, basic_bird, has some of my custom hummingbird Modules, under `/
 
 ## How to use
 
-Install Docker and docker-compose.
+Install Docker and docker-compose: https://docs.docker.com/get-docker/
 
-Install hummingbird here: https://github.com/richardycao/hummingbird_python
+`pip install pathlib2`
+
+Install hummingbird: https://github.com/richardycao/hummingbird_python
 
 `git clone https://github.com/richardycao/basic_bird.git`
 

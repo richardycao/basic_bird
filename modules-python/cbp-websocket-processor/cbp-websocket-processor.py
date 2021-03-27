@@ -10,12 +10,12 @@ import sys
 
 class CBPWebsocketProcessor(Module):
     def __init__(self, args):
-        super().__init__()
+        super().__init__(args)
 
         self.setInput(True)
         self.setOutput(True)
 
-        self.build(args)
+        self.build()
 
         self.bids = SortedDict({})
         self.asks = SortedDict({})
@@ -93,14 +93,9 @@ class CBPWebsocketProcessor(Module):
     def run(self):
         try:
             while True:
-                msg = self.consumer.poll(timeout=1.0)
+                message = self.receive()
 
-                if msg is None:
-                    continue
-                if msg.error():
-                    raise KafkaException(msg.error())
-                else:
-                    message = loads(msg.value().decode("utf-8"))
+                if message is not None:
                     print(message)
                     # should_produce = self.msg_consume(message)
 
@@ -114,9 +109,7 @@ class CBPWebsocketProcessor(Module):
         except KeyboardInterrupt:
             sys.stderr.write('%% Aborted by user\n')
         finally:
-            # Close down consumer to commit final offsets.
-            self.consumer.close()
-            self.producer.flush()
+            self.closeIO()
 
 if __name__ == "__main__":
     c = CBPWebsocketProcessor(sys.argv[1:])

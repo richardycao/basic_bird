@@ -8,7 +8,8 @@ RUN pip3 install --upgrade pip
 WORKDIR /usr/src/app
 COPY requirements.txt .
 RUN pip3 install -r requirements.txt
+RUN pip3 uninstall hummingbird
 RUN pip3 install git+https://github.com/richardycao/hummingbird_python.git#egg=hummingbird
 
 COPY *.py .
-CMD python3 cbp-websocket.py --product_ids BTC-USD --channels ticker
+CMD python3 cbp-websocket.py --topics-in test1-0 --topics-out test1-1 --product_ids BTC-USD --channels ticker

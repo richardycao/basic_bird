@@ -35,16 +35,15 @@ class CBPWebsocket(Module):
         self.ws.on_open = self.on_open
 
     def on_message(self, ws, message):
-        # print(message)
-        self.producer.produce(self.args['topics_out'][0], value=message, callback=self.delivery_callback)
-        self.producer.poll(0)
+        #print(message)
+        self.send(message)
 
     def on_error(self, ws, error):
-        self.producer.flush()
+        self.closeIO()
         print(error)
 
     def on_close(self, ws):
-        self.producer.flush()
+        self.closeIO()
         print("### closed ###")
 
     def on_open(self, ws):

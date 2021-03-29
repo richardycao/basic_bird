@@ -24,4 +24,4 @@ Install hummingbird: https://github.com/richardycao/hummingbird_python
 
 Wait ~1 minute for kafka to start up.
 
-`docker-compose -f docker-compose-test.yml up` Starts the example data pipeline
+`docker-compose -f docker-compose-test1.yml up` Starts the example data pipeline, where "test1" is the pipeline id that is set in test-pipeline.py

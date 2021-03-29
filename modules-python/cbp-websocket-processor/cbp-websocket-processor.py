@@ -60,10 +60,12 @@ class CBPWebsocketProcessor(Module):
 
         self.setInput(True)
         self.setOutput(True)
-        self.add_argument('type', lambda x: x)
-        self.add_argument('bar-type', lambda x: x.split(','))
+        self.add_argument('type', default='ticker')
+        self.add_argument('bar-type', lambda x: x.split(','), default='tick')
+        self.add_argument('moving-average-length-tick', lambda x: int(x), default=10)
         self.build()
 
+        ##### ticker #####
         self.previous = {
             'price': 0,
             'best_bid': 0,
@@ -71,6 +73,21 @@ class CBPWebsocketProcessor(Module):
             'time': "", # Find out how to convert time from the message to something else
             'last_size': 0
         }
+        self.moving_average = {
+          'tick': [],
+          'time': [],
+          'volume': [],
+          'dollar': []
+        }
+        self.moving_average_count = {
+          'tick': 0,
+          'time': 0,
+          'volume': 0,
+          'dollar': 0
+        }
+
+        ##### l2update #####
+
         
     def ready_produce_tick_bar(self):
         return 'tick' in self.args['bar-type']
@@ -93,11 +110,20 @@ class CBPWebsocketProcessor(Module):
           'data': {}
         }
         if self.ready_produce_tick_bar():
+            price = float(message['price'])
+
+            self.moving_average['tick'].append()
+            self.moving_average_count['tick'] += 1
+            if self.moving_average_count['tick'] >= 10:
+              self.moving_average
+              self.moving_average_count['tick'] = 9
+
             msg['data']['tick'] = {
-                'price': float(message['price']),
+                'price': price,
+                'change': price - self.previous['price'],
                 'best_bid': float(message['best_bid']),
                 'best_ask': float(message['best_ask']),
-                'change': float(message['price']) - self.previous['price'],
+                'time': message['time'],
                 'last_size': float(message['last_size'])
             }
         if self.ready_produce_time_bar():

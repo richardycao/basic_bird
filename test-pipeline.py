@@ -19,7 +19,7 @@ if __name__ == "__main__":
       params={
         "product_ids": 'BTC-USD',
         "channels": 'ticker',
-        "servers-out": 'localhost:9092'
+        # "servers-out": 'localhost:9092'
       }
     ),
     PipelineNode(
@@ -27,14 +27,14 @@ if __name__ == "__main__":
       params={
         "type": 'ticker',
         "bar-type": 'tick',
-        "servers-in": 'localhost:9092',
-        "servers-out": 'localhost:9092'
+        # "servers-in": 'localhost:9092',
+        # "servers-out": 'localhost:9092'
       }
     ),
     PipelineNode(
       module_path="./modules-python/message-logger/message-logger.py",
       params={
-        "servers-in": 'localhost:9092',
+        # "servers-in": 'localhost:9092',
       }
     ),
   ])

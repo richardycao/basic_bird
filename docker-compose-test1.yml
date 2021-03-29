@@ -4,14 +4,20 @@ services:
   message-logger:
     build: modules-python/message-logger
     container_name: message-logger
+    environment:
+      - "PYTHONUNBUFFERED=1"
   cbp-websocket-processor:
     build: modules-python/cbp-websocket-processor
     container_name: cbp-websocket-processor
+    environment:
+      - "PYTHONUNBUFFERED=1"
     depends_on:
       - message-logger
   cbp-websocket:
     build: modules-python/cbp-websocket
     container_name: cbp-websocket
+    environment:
+      - "PYTHONUNBUFFERED=1"
     depends_on:
       - message-logger
       - cbp-websocket-processor

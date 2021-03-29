@@ -36,7 +36,6 @@ class CBPWebsocket(Module):
 
         self.setInput(False)
         self.setOutput(True)
-
         self.add_argument('product_ids', lambda x: x.split(','))
         self.add_argument('channels', lambda x: x.split(','))
         self.build()
@@ -56,8 +55,7 @@ class CBPWebsocket(Module):
         self.ws.on_open = self.on_open
 
     def on_message(self, ws, message):
-        #print(json.dumps(message).encode('utf-8'))
-        self.send(message)
+        self.send(message, encode=False)
 
     def on_error(self, ws, error):
         self.closeIO()

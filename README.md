@@ -12,8 +12,6 @@ This repository, basic_bird, has some of my custom hummingbird Modules, under `/
 
 Install Docker and docker-compose: https://docs.docker.com/get-docker/
 
-`pip install pathlib2`
-
 Install hummingbird: https://github.com/richardycao/hummingbird_python
 
 `git clone https://github.com/richardycao/basic_bird.git`

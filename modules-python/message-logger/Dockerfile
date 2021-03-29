@@ -12,4 +12,4 @@ RUN pip3 uninstall hummingbird
 RUN pip3 install git+https://github.com/richardycao/hummingbird_python.git#egg=hummingbird
 
 COPY *.py .
-CMD python3 cbp-ticker-processor.py --topics-in test1-1 --topics-out test1-2 --type tick
+CMD python3 message-logger.py --topics-in test1-2 --topics-out test1-3 --servers-in localhost:9092

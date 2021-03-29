@@ -25,23 +25,5 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       ALLOW_PLAINTEXT_LISTENER: 'yes'
       #KAFKA_OFFSETS_TOPIC_NUM_PARTITIONS: '3'
-  # producer:
-  #   build: ./producer
-  #   container_name: producer
-  #   depends_on:
-  #     - kafka0
-  # preprocessor:
-  #   build: ./preprocessor
-  #   container_name: preprocessor
-  #   depends_on:
-  #     - kafka0
-  #     - producer
-  # predictor:
-  #   build: ./predictor
-  #   container_name: predictor
-  #   depends_on:
-  #     - kafka0
-  #     - producer
-  #     - preprocessor
     
     

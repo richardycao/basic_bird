@@ -1,0 +1,17 @@
+version: '3.7'
+
+services:
+  message-logger:
+    build: modules-python/message-logger
+    container_name: message-logger
+  cbp-websocket-processor:
+    build: modules-python/cbp-websocket-processor
+    container_name: cbp-websocket-processor
+    depends_on:
+      - message-logger
+  cbp-websocket:
+    build: modules-python/cbp-websocket
+    container_name: cbp-websocket
+    depends_on:
+      - message-logger
+      - cbp-websocket-processor

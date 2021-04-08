@@ -12,6 +12,42 @@ Description: Processes data for each type of websocket channel.
         level2: Not supported yet.
 
 Parameters:
+    type: {
+      values: {
+        'ticker': {
+          values: {},
+          options: {
+            bar-type: {
+              values: {
+                'tick': {
+                  'values': {},
+                  'options': {
+                    'moving-average-length': {
+                      'parser': <>,
+                      'default': <>
+                    }
+                  }
+                },
+                'time': {
+                  
+                }
+              },
+              options: {
+                'parser': <>,
+                'default': <>
+              }
+            },
+            'parser': <>,
+            'default': <>
+          }
+        },
+        'level2': {}
+      },
+      options: {
+        'parser': <>,
+        'default': <>
+      }
+    }
     type: 'ticker' or 'level2' (for now)
     bar-type: comma-separated list of 'tick', 'time', 'volume', 'dollar'
     ...
@@ -87,7 +123,6 @@ class CBPWebsocketProcessor(Module):
         }
 
         ##### l2update #####
-
         
     def ready_produce_tick_bar(self):
         return 'tick' in self.args['bar-type']

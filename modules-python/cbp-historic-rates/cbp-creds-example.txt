@@ -1,0 +1,4 @@
+// Rename to "cbp-creds.txt" and delete this comment.
+API_KEY=
+SECRET_KEY=
+PASSPHRASE=

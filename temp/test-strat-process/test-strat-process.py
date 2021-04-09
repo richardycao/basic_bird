@@ -8,31 +8,9 @@ import datetime
 Documentation for TestStratProcess
 
 Description:
-    Holding position?: y/n
-    Current vs 30-day: h/l
-    Current vs 5-day: h/l
-    5-day vs 30-day: h/l
-
-    If I have a position:
-        If current < 5-day < 30-day:
-        If current < 30-day < 5-day:
-        If 30-day < current < 5-day:
-        If 30-day < 5-day < current:
-        If 5-day < current < 30-day:
-        If 5-day < 30-day < current:
-    If I don't have a position:
-        If current < 5-day < 30-day:
-        If current < 30-day < 5-day:
-        If 30-day < current < 5-day: 
-        If 30-day < 5-day < current:
-        If 5-day < current < 30-day:
-        If 5-day < 30-day < current:
-
-    Another approach is using parameters:
-        Current/30-day ratio
-        Current/5-day ratio
 
 Parameters:
+    durations: comma-separated list of durations
 
 Message Format:
     Input: 

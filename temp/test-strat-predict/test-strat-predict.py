@@ -10,6 +10,7 @@ Documentation for TestStratPredict
 Description:
 
 Parameters:
+    currency: can be one of "BTC", "USD", etc. (any single currency)
 
 Message Format:
     Input: 

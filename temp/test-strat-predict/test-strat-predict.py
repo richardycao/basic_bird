@@ -1,5 +1,6 @@
 from hummingbird import Module
 #import coinbasepro as cbp
+import tensorflow as tf
 import sys
 from time import sleep
 import datetime
@@ -59,8 +60,10 @@ class TestStratPredict(Module):
         if self.initial_price == -1:
             self.initial_price = message[0]
 
+        features = tf.reshape(tf.constant(message[1:]), [1, -1])
+        features /= message[0]
+        print(features)
         
-
         return 0
 
     def run(self):

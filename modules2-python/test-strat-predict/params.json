@@ -1,0 +1,1 @@
+{"topics_in": ["test-strat-process-test-strat-predict"], "topics_out": [], "servers_in": "kafka0:29092", "servers_out": "kafka0:29092", "session_timeout_ms": 10000, "auto_offset_reset": "earliest", "group_id": "pipeline-v2"}

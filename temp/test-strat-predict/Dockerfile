@@ -11,4 +11,4 @@ RUN pip3 install -r requirements.txt
 RUN pip3 uninstall hummingbird
 RUN pip3 install --upgrade git+https://github.com/richardycao/hummingbird_python.git#egg=hummingbird
 
-CMD python3 test-strat-predict.py --topics-in pipeline-v1-2 --topics-out pipeline-v1-3
+CMD python3 test-strat-predict.py --topics-in pipeline-v1-2 --topics-out pipeline-v1-3 --currency BTC

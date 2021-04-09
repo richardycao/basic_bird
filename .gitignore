@@ -1,7 +1,7 @@
 # App-specific files
 *modules-python-strats
-*pipeline-v1.py
-*docker-compose-pipeline-v1.yml
+*pipeline-v*.py
+*docker-compose-pipeline-v*.yml
 *cbp-creds.txt
 
 # Generated files

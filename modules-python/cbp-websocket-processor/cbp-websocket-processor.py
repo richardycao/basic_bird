@@ -98,7 +98,7 @@ class CBPWebsocketProcessor(Module):
         self.setOutput(True)
         self.add_argument('type', default='ticker')
         self.add_argument('bar-type', lambda x: x.split(','), default='tick')
-        self.add_argument('moving-average-length-tick', lambda x: int(x), default=10)
+        self.add_argument('moving-average-length-tick', lambda x: int(x), default='10')
         self.build()
 
         ##### ticker #####

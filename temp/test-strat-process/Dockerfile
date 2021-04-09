@@ -6,10 +6,9 @@ RUN apt-get install -y git
 RUN pip3 install --upgrade pip
 
 WORKDIR /usr/src/app
-COPY requirements.txt .
+COPY . .
 RUN pip3 install -r requirements.txt
 RUN pip3 uninstall hummingbird
-RUN pip install --upgrade git+https://github.com/richardycao/hummingbird_python.git#egg=hummingbird
+RUN pip3 install --upgrade git+https://github.com/richardycao/hummingbird_python.git#egg=hummingbird
 
-COPY . .
-CMD python3 message-logger.py --topics-in test1-1 --topics-out test1-2
+CMD python3 test-strat-process.py --topics-in pipeline-v1-1 --topics-out pipeline-v1-2 --durations 5,30

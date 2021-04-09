@@ -1,8 +1,15 @@
 version: '3.7'
 
 services:
+  message-logger:
+    build: modules-python/message-logger
+    container_name: message-logger
+    environment:
+      - "PYTHONUNBUFFERED=1"
   cbp-historic-rates:
     build: modules-python/cbp-historic-rates
     container_name: cbp-historic-rates
     environment:
       - "PYTHONUNBUFFERED=1"
+    depends_on:
+      - message-logger

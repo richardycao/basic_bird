@@ -6,10 +6,9 @@ RUN apt-get install -y git
 RUN pip3 install --upgrade pip
 
 WORKDIR /usr/src/app
-COPY requirements.txt .
+COPY . .
 RUN pip3 install -r requirements.txt
 RUN pip3 uninstall hummingbird
-RUN pip install --upgrade git+https://github.com/richardycao/hummingbird_python.git#egg=hummingbird
+RUN pip3 install --upgrade git+https://github.com/richardycao/hummingbird_python.git#egg=hummingbird
 
-COPY . .
-CMD python3 cbp-historic-rates.py --topics-in test1-0 --topics-out test1-1
+CMD python3 cbp-historic-rates.py --topics-in pipeline-v1-0 --topics-out pipeline-v1-1 --start 2021-02-08T00:00:00.000Z --stop 2021-04-07T00:00:00.000Z

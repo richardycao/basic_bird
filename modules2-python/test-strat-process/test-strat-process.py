@@ -28,10 +28,11 @@ class TestStratProcess(Module2):
 
         self.queues = SortedDict({})
         for d in self.params['durations']:
-            self.queues[d] = [[], 0] # (queue, moving average)
+            self.queues[d] = [[], 0] # queue-size: [[queue], moving average]
 
     def msg_consume(self, message):
-        val = message['low'] + (message['high'] - message['low']) / 2
+        # Use opening price to avoid getting future data into the calculations
+        val = message['open']
 
         for length, pair in self.queues.items():
             if len(pair[0]) >= length:
@@ -40,7 +41,7 @@ class TestStratProcess(Module2):
             pair[0].append(val)
             pair[1] += val
 
-        return [val] + [v[1]/k for k,v in self.queues.items()]
+        return [val] + [v[1]/(len(v[0]) if len(v[0]) != 0 else 1) for k,v in self.queues.items()]
 
     def run(self):
         try:
@@ -49,6 +50,10 @@ class TestStratProcess(Module2):
 
                 if message != None:
                     data = self.msg_consume(message)
+                    # out_message = {
+                    #   'type': 'test-strat-process',
+                    #   'data': data
+                    # }
                     self.send(data)
 
         except KeyboardInterrupt:

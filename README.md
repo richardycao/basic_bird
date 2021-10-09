@@ -1,10 +1,10 @@
 # Version 2
 
-I'm returning to this project after ~6 months to test an algorithm using this pub-sub model. I'm running the newer prototype of this project on AWS, but realized Kafka may be better for this use case than gRPC, which is what I'm using right now. So I'm trying to bring basic_bird back to life.
+I'm returning to this project after ~6 months to test an algorithm. I'm running the newer prototype of this project on AWS using gRPC, but realized Kafka might be better for running this algorithm on real-time data, which is why I'm trying to revive basic_bird.
 
 ## What is this?
 
-A testing repository for the code-sharing pipeline development framework.
+A testing repository for the code-sharing pipeline development framework, hummingbird.
 
 ## How to use
 

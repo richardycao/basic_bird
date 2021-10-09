@@ -1,6 +1,8 @@
 from hummingbird import Module2
 import datetime as dt
 import numpy as np
+import torch
+from .agent import JobAgent
 
 import sys
 
@@ -14,6 +16,8 @@ class DogeJob(Module2):
     self.order_book = [0 for _ in range(self.max_price * self.granularity)]
     self.bid = 0
     self.ask = 0
+
+    self.agent = JobAgent(60, 3)
   
   def _to_price(self, index) -> float:
     return index / self.granularity
@@ -33,13 +37,28 @@ class DogeJob(Module2):
   
   def on_order_fill(self, ts, side, price, volume): # `side` is the taker's side
     """
-    I want to strip a section of the order book, 5% on each side of the mean.
-    Then compress it. Compression can be done in 0.1 increments of each standard
+    1. I want to strip a section of the order book, 5% on each side of the mean.
+    2. Then compress it. Compression can be done in 0.1 increments of each standard
     deviation, on each side, resulting in 60 sections.
-    The 60-length array is fed into a 1D CNN and to produce features.
-    These features are combined into a dense layer of a feedforward network, which is
-    used to estimated the state-action values.
-    Remember to use replay memory.
+    The compressed list should be of type torch.Tensor, which can be fed into the DQN.
+    3. The 60-length array is fed into the DQN and gets an action.
+    """
+
+    # For now, I'll just use 30 prices on each side since the compression problem is tricky.
+    bid_index = self._to_index(self.bid)
+    ask_index = self._to_index(self.ask)
+    comp = torch.tensor(self.order_book[bid_index-29:bid_index+1] + self.order_book[ask_index:ask_index+30])
+
+    action = self.agent.action(comp)
+
+    """
+    This only hooks it up with the agent. I still need to include all the of the important
+    variables in state. State includes:
+    1. compressed order book
+    2. cash
+    3. total_account_value
+    4. number of doge coin held
+    5. cost basis of doge coin
     """
     pass
 

@@ -42,6 +42,9 @@ There are a bunch of useless files in this repo so it's not easy to navigate or 
 
 I don't have a tutorial for how to use this. It was a miracle that I remembered how to use it and ran into minimal bugs on my first try. I need to write a tutorial.
 
+## More things to do
+Modules could have an onMessage() function instead of run(). This way, users don't have to implement all the loop-related stuff.
+
 # Version 1 (Outdated)
 
 ## What is this?

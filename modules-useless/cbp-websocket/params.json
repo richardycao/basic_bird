@@ -1,1 +1,1 @@
-{"product_ids": ["DOGE-USD"], "channels": ["level2"], "topics_in": [], "topics_out": ["cbp-websocket-logger"], "servers_in": "kafka0:29092", "servers_out": "kafka0:29092", "session_timeout_ms": 10000, "auto_offset_reset": "earliest", "group_id": "pipeline-v2"}
+{"product_ids": ["DOGE-USD"], "channels": ["level2"], "topics_in": [], "topics_out": ["cbp-websocket-doge-job"], "servers_in": "kafka0:29092", "servers_out": "kafka0:29092", "session_timeout_ms": 10000, "auto_offset_reset": "earliest", "group_id": "pipeline-v2"}

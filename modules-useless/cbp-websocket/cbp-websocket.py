@@ -25,8 +25,8 @@ Message Format:
     Output: See https://docs.pro.coinbase.com/?python#channels
 
 Command:
-    python3 cbp-websocket.py --product_ids <product ids> --channels <channels>
-    e.g. python3 cbp-websocket.py --product_ids BTC-USD,XLM-USD --channels level2,ticker
+    python3 cbp-websocket.py
+    e.g. python3 cbp-websocket.py
 
 """
 

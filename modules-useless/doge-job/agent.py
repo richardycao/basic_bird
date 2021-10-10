@@ -49,9 +49,12 @@ class DQN(nn.Module):
         self.fc2 = nn.Linear(64, outputs)
 
     def forward(self, x):
+        x, y = x[:-3], x[-3:]
         x = F.relu(self.bn1(self.conv1(x)))
         x = F.relu(self.bn2(self.conv2(x)))
-        x = F.relu(self.fc1(x.view(x.size(0), -1)))
+        x = self.fc1(x.view(x.size(0), -1))
+        x = torch.cat((x, y))
+        x = F.relu(x)
         x = self.fc2(x)
         return x
 
@@ -72,13 +75,15 @@ class JobAgent:
         
         self.BATCH_SIZE = 64
         self.GAMMA = 1
-        self.EPS = 0.1
+        self.EPS_START = 0.99
+        self.EPS_END = 0.1
+        self.EPS_DECAY = 3000
         self.TARGET_UPDATE = 100
         self.target_update_count = 0
 
-    def action(self, state):
+    def action(self, t, state):
         sample = random.random()
-        eps_threshold = self.EPS
+        eps_threshold = self.EPS_END + (self.EPS_START - self.EPS_END) * np.exp(-t / self.EPS_DECAY)
 
         if sample > eps_threshold: # greedy
             with torch.no_grad():

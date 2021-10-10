@@ -2,7 +2,7 @@ from hummingbird import Module2
 import datetime as dt
 import numpy as np
 import torch
-from .agent import JobAgent
+from agent import JobAgent
 
 import sys
 
@@ -17,7 +17,19 @@ class DogeJob(Module2):
     self.bid = 0
     self.ask = 0
 
+    # Values to track
+    self.cash = 1000
+    self.account_value = 1000
+    self.doge_owned = 0
+    self.doge_cost_basis = 0
+
+    # Values for agent and state
     self.agent = JobAgent(60, 3)
+    self.cash_to_account_value = 1
+    self.t = 0
+    # ratio of the current mean of bid-ask to the doge_cost_basis
+
+    self.avg_reward = []
   
   def _to_price(self, index) -> float:
     return index / self.granularity
@@ -47,9 +59,45 @@ class DogeJob(Module2):
     # For now, I'll just use 30 prices on each side since the compression problem is tricky.
     bid_index = self._to_index(self.bid)
     ask_index = self._to_index(self.ask)
-    comp = torch.tensor(self.order_book[bid_index-29:bid_index+1] + self.order_book[ask_index:ask_index+30])
+    mean_price = (self.bid + self.ask) / 2
+    self.state = torch.tensor(self.order_book[bid_index-29:bid_index+1] + self.order_book[ask_index:ask_index+30] + [self.doge_owned, self.doge_cost_basis, mean_price])
+    """
+    Values to track:
+    1. doge coin owned and cost basis are used to calculate the original value. When
+    selling, bid * cost_basis is the new value, so the difference is the gain/loss.
 
-    action = self.agent.action(comp)
+    This is all I need.
+    """
+
+    self.action = self.agent.action(self.t, self.state)
+    self.t += 1
+    self.reward = 0
+    if self.action == 0: # buy
+      if self.doge_owned == 0: # if no position, then buy
+        fee = self.account_value * 0.1 * 0.005
+        doge_value = self.account_value * 0.1 * 0.995
+        self.reward = -fee
+        self.account_value -= fee
+
+        self.doge_owned = doge_value / self.ask
+        self.doge_cost_basis = self.ask
+      else: # if has position, nothing happens
+        pass
+    elif self.action == 1: # sell
+      if self.doge_owned != 0: # if has position, then sell
+        doge_value = self.doge_cost_basis * self.doge_owned
+        fee = doge_value * 0.005
+        cash_back = doge_value * 0.995
+        
+        self.reward = cash_back
+        self.account_value += cash_back
+
+        self.doge_owned = 0
+        self.doge_cost_basis = 0
+      else: # if no position, nothing happens
+        pass
+    elif self.action == 2: # hold
+      pass
 
     """
     This only hooks it up with the agent. I still need to include all the of the important
@@ -59,8 +107,47 @@ class DogeJob(Module2):
     3. total_account_value
     4. number of doge coin held
     5. cost basis of doge coin
+
+    Rules:
+    1. Exactly 10% of the account_value will be used in a buy.
+    2. Sell will sell all doge coin.
+    3. Can only sell if I have a position. Can only buy if I don't have a position.
+
+    State should be invariant of:
+    1. coin price
+    2. account value
+    3. number of coins held
+
+    It simply needs to know:
+    1. What is the percent gain or loss? This can be calculated using the current bid-ask and
+    the cost basis of doge coin owned.
+
+    Percent gain or loss isn't a good way. 50% gain -> 50% loss isn't breakeven.
+    How about flat value? sure let's go that for now.
+    This is a prototype anyway.
     """
-    pass
+
+    """
+    If I think somthing is good to buy, I buy some.
+    1. 10% of account_value is converted into doge coin and fees. account_value
+    decreases by 0.5% * 10%. doge_owned increases by the number of doge equivalent
+    to 10% * 99.5% of the original account value. And cost basis is adjusted for the
+    new coins.
+    """
+
+  def after_order_fill(self):
+    bid_index = self._to_index(self.bid)
+    ask_index = self._to_index(self.ask)
+    mean_price = (self.bid + self.ask) / 2
+    next_state = torch.tensor(self.order_book[bid_index-29:bid_index+1] + self.order_book[ask_index:ask_index+30] + [self.doge_owned, self.doge_cost_basis, mean_price])
+
+    self.agent.optimize(self.state, self.action, next_state, torch.tensor(self.reward))
+
+    if len(self.avg_reward) < 200:
+      self.avg_reward.append(self.reward)
+    else:
+      print('Average reward over last 200 actions:', np.average(self.avg_reward))
+      self.avg_reward = []
 
   def update_order_book(self, message):
     for order in message['changes']:
@@ -110,6 +197,7 @@ class DogeJob(Module2):
           # someone has placed a limit order on the sell side
           if price < self.ask: # if price less than the current ask, then update the ask
             self.ask = price
+      self.after_order_fill()
 
   def on_message(self, message):
     if message['type'] == 'snapshot':

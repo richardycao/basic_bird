@@ -37,25 +37,36 @@ class DQN(nn.Module):
         self.conv2 = nn.Conv1d(16, 32, kernel_size=3) # 58x16 -> 56x32
         self.bn2 = nn.BatchNorm1d(32)
 
-        self.pool = nn.MaxPool1d(2) # 56x32 -> 28x32
-
         # Calculates output size of convolutional operation
         def conv1d_size_out(size, kernel_size=3, stride=1, padding=0):
             return (size - (kernel_size - 1) - 1 + 2*padding) // stride + 1
         conv_size = conv1d_size_out(conv1d_size_out(input_size))
-        linear_input_size = conv_size * 32 # total number of input nodes for fully-connected layer
+        linear_input_size = conv_size * 32 + 3 # total number of input nodes for fully-connected layer
 
         self.fc1 = nn.Linear(linear_input_size, 64)
         self.fc2 = nn.Linear(64, outputs)
 
     def forward(self, x):
-        x, y = x[:-3], x[-3:]
+        # print('forward:')
+        # print(x.size())
+        x = torch.reshape(x, (-1, 1, 63))
+        # print(x.size())
+        x, y = x[:,:,:-3], x[:,:,-3:]
+        # print(x.size(), y.size())
         x = F.relu(self.bn1(self.conv1(x)))
+        # print(x.size())
         x = F.relu(self.bn2(self.conv2(x)))
-        x = self.fc1(x.view(x.size(0), -1))
-        x = torch.cat((x, y))
+        # print(x.size())
+        x = x.view(x.size(0), -1)
+        # print(x.size())
+        x = torch.cat((x, torch.reshape(y, (-1, 3))), 1)
+        # print(x.size())
+        x = self.fc1(x)
+        # print(x.size())
         x = F.relu(x)
+        # print(x.size())
         x = self.fc2(x)
+        # print(x.size())
         return x
 
 class JobAgent:
@@ -73,13 +84,16 @@ class JobAgent:
         self.optimizer = optim.Adam(self.policy_net.parameters(), lr=0.0001)
         self.memory = ReplayMemory(10000)
         
-        self.BATCH_SIZE = 64
+        self.BATCH_SIZE = 32
         self.GAMMA = 1
         self.EPS_START = 0.99
         self.EPS_END = 0.1
         self.EPS_DECAY = 3000
         self.TARGET_UPDATE = 100
         self.target_update_count = 0
+    
+    def get_memory(self):
+      return self.memory
 
     def action(self, t, state):
         sample = random.random()
@@ -102,12 +116,15 @@ class JobAgent:
         if len([s[0] for s in batch.next_state if s is not None]) == 0:
             return
         non_final_next_states = torch.cat([s for s in batch.next_state if s is not None])
-
+        
         # Get data batches
-        states_batch = torch.cat(batch.state)
+        states_batch = torch.cat(batch.state, -1)
         action_batch = torch.cat(batch.action)
         reward_batch = torch.cat(batch.reward)
 
+        # print('states_batch:', states_batch.size())
+        # print('action_batch:', action_batch.size())
+        # print('reward_batch:', reward_batch.size())
         state_action_values = self.policy_net(states_batch).gather(1, action_batch)
 
         # state value or 0 in case the state was final.

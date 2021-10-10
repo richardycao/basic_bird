@@ -30,6 +30,9 @@ class DogeJob(Module2):
     # ratio of the current mean of bid-ask to the doge_cost_basis
 
     self.avg_reward = []
+    self.buys = 0
+    self.sells = 0
+    self.holds = 0
   
   def _to_price(self, index) -> float:
     return index / self.granularity
@@ -37,15 +40,16 @@ class DogeJob(Module2):
     return int(price * self.granularity)
 
   def init_order_book(self, message):
-    self.bid = message['bids'][0][0]
-    self.ask = message['asks'][0][0]
+    self.bid = float(message['bids'][0][0])
+    self.ask = float(message['asks'][0][0])
 
     for bid in message['bids']:
-      index = self._to_index(bid[0])
-      self.order_book[index] = bid[1]
+      index = self._to_index(float(bid[0]))
+      self.order_book[index] = float(bid[1])
     for ask in message['asks']:
-      index = self._to_index(ask[0])
-      self.order_book[index] = ask[1]
+      index = self._to_index(float(ask[0]))
+      if index < len(self.order_book):
+        self.order_book[index] = float(ask[1])
   
   def on_order_fill(self, ts, side, price, volume): # `side` is the taker's side
     """
@@ -77,7 +81,7 @@ class DogeJob(Module2):
         fee = self.account_value * 0.1 * 0.005
         doge_value = self.account_value * 0.1 * 0.995
         self.reward = -fee
-        self.account_value -= fee
+        self.account_value -= fee + doge_value
 
         self.doge_owned = doge_value / self.ask
         self.doge_cost_basis = self.ask
@@ -85,11 +89,12 @@ class DogeJob(Module2):
         pass
     elif self.action == 1: # sell
       if self.doge_owned != 0: # if has position, then sell
-        doge_value = self.doge_cost_basis * self.doge_owned
-        fee = doge_value * 0.005
-        cash_back = doge_value * 0.995
+        original_doge_value = self.doge_cost_basis * self.doge_owned
+        current_doge_value = self.bid * self.doge_owned
+        fee = current_doge_value * 0.005
+        cash_back = current_doge_value * 0.995
         
-        self.reward = cash_back
+        self.reward = cash_back - original_doge_value
         self.account_value += cash_back
 
         self.doge_owned = 0
@@ -99,58 +104,33 @@ class DogeJob(Module2):
     elif self.action == 2: # hold
       pass
 
-    """
-    This only hooks it up with the agent. I still need to include all the of the important
-    variables in state. State includes:
-    1. compressed order book
-    2. cash
-    3. total_account_value
-    4. number of doge coin held
-    5. cost basis of doge coin
-
-    Rules:
-    1. Exactly 10% of the account_value will be used in a buy.
-    2. Sell will sell all doge coin.
-    3. Can only sell if I have a position. Can only buy if I don't have a position.
-
-    State should be invariant of:
-    1. coin price
-    2. account value
-    3. number of coins held
-
-    It simply needs to know:
-    1. What is the percent gain or loss? This can be calculated using the current bid-ask and
-    the cost basis of doge coin owned.
-
-    Percent gain or loss isn't a good way. 50% gain -> 50% loss isn't breakeven.
-    How about flat value? sure let's go that for now.
-    This is a prototype anyway.
-    """
-
-    """
-    If I think somthing is good to buy, I buy some.
-    1. 10% of account_value is converted into doge coin and fees. account_value
-    decreases by 0.5% * 10%. doge_owned increases by the number of doge equivalent
-    to 10% * 99.5% of the original account value. And cost basis is adjusted for the
-    new coins.
-    """
-
   def after_order_fill(self):
     bid_index = self._to_index(self.bid)
     ask_index = self._to_index(self.ask)
     mean_price = (self.bid + self.ask) / 2
     next_state = torch.tensor(self.order_book[bid_index-29:bid_index+1] + self.order_book[ask_index:ask_index+30] + [self.doge_owned, self.doge_cost_basis, mean_price])
+    self.agent.get_memory().push(self.state, self.action, next_state, torch.tensor([self.reward]))
 
-    self.agent.optimize(self.state, self.action, next_state, torch.tensor(self.reward))
+    self.agent.optimize()
 
-    if len(self.avg_reward) < 200:
-      self.avg_reward.append(self.reward)
-    else:
-      print('Average reward over last 200 actions:', np.average(self.avg_reward))
+    if len(self.avg_reward) >= 1000:
+      print('Average reward over last 1000 actions:', np.average(self.avg_reward))
+      print('Buys / sells / holds:', self.buys, self.sells, self.holds)
       self.avg_reward = []
+      self.buys = 0
+      self.sells = 0
+      self.holds = 0
+    self.avg_reward.append(self.reward)
+    if self.action[0][0] == 0:
+      self.buys += 1
+    elif self.action[0][0] == 1:
+      self.sells += 1
+    elif self.action[0][0] == 2:
+      self.holds += 1
 
   def update_order_book(self, message):
     for order in message['changes']:
+      was_order_filled = False
       ts, side, price, new_vol = message['time'], order[0], float(order[1]), float(order[2])
       index = self._to_index(price)
       if index >= len(self.order_book):
@@ -169,6 +149,7 @@ class DogeJob(Module2):
         if new_vol < old_vol: # volume decreased
           if price == self.bid: # buy limit order has been filled
             self.on_order_fill(ts, side, price, volume)
+            was_order_filled = True
 
             if new_vol == 0: # if buy limit order is completely filled, then update the bid to be the next smallest one.
               bid_index = self._to_index(self.bid)
@@ -185,6 +166,7 @@ class DogeJob(Module2):
         if new_vol < old_vol: # volume decreased
           if price == self.ask: # sell limit order has been filled
             self.on_order_fill(ts, side, price, volume)
+            was_order_filled = True
 
             if new_vol == 0: # if sell limit order is completely filled, then update the ask to be the next largest one.
               ask_index = self._to_index(self.ask)
@@ -197,15 +179,22 @@ class DogeJob(Module2):
           # someone has placed a limit order on the sell side
           if price < self.ask: # if price less than the current ask, then update the ask
             self.ask = price
-      self.after_order_fill()
+      
+      if was_order_filled:
+        self.after_order_fill()
 
   def on_message(self, message):
+    if not self.has_seen_snapshot and message['type'] != 'snapshot':
+      return
+
     if message['type'] == 'snapshot':
+      self.has_seen_snapshot = True
       self.init_order_book(message)
     elif message['type'] == 'l2update':
       self.update_order_book(message)
 
   def run(self):
+    self.has_seen_snapshot = False
     try:
       while True:
         message = self.receive()

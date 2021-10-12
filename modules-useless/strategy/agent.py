@@ -29,9 +29,14 @@ class ReplayMemory(object):
         return len(self.memory)
 
 class DQN(nn.Module):
-    def __init__(self, input_size, outputs):
+    def __init__(self, input_size, additional_features, outputs):
         super().__init__()
+
+        self.input_size = input_size
+        self.additional_features = additional_features
+        self.outputs = outputs
         
+        self.bn0 = nn.BatchNorm1d(1)
         self.conv1 = nn.Conv1d(1, 16, kernel_size=3) # 60x1 -> 58x16
         self.bn1 = nn.BatchNorm1d(16)
         self.conv2 = nn.Conv1d(16, 32, kernel_size=3) # 58x16 -> 56x32
@@ -41,7 +46,7 @@ class DQN(nn.Module):
         def conv1d_size_out(size, kernel_size=3, stride=1, padding=0):
             return (size - (kernel_size - 1) - 1 + 2*padding) // stride + 1
         conv_size = conv1d_size_out(conv1d_size_out(input_size))
-        linear_input_size = conv_size * 32 + 3 # total number of input nodes for fully-connected layer
+        linear_input_size = conv_size * 32 + additional_features # total number of input nodes for fully-connected layer
 
         self.fc1 = nn.Linear(linear_input_size, 64)
         self.fc2 = nn.Linear(64, outputs)
@@ -49,17 +54,17 @@ class DQN(nn.Module):
     def forward(self, x):
         # print('forward:')
         # print(x.size())
-        x = torch.reshape(x, (-1, 1, 63))
+        x = torch.reshape(x, (-1, 1, self.input_size + self.additional_features))
         # print(x.size())
-        x, y = x[:,:,:-3], x[:,:,-3:]
+        x, y = x[:,:,:-self.additional_features], x[:,:,-self.additional_features:]
         # print(x.size(), y.size())
-        x = F.relu(self.bn1(self.conv1(x)))
+        x = F.relu(self.bn1(self.conv1(self.bn0(x))))
         # print(x.size())
         x = F.relu(self.bn2(self.conv2(x)))
         # print(x.size())
         x = x.view(x.size(0), -1)
         # print(x.size())
-        x = torch.cat((x, torch.reshape(y, (-1, 3))), 1)
+        x = torch.cat((x, torch.reshape(y, (-1, self.additional_features))), 1)
         # print(x.size())
         x = self.fc1(x)
         # print(x.size())
@@ -70,26 +75,27 @@ class DQN(nn.Module):
         return x
 
 class JobAgent:
-    def __init__(self, length, n_actions):
-        self.length = 60
+    def __init__(self, length, additional_features, n_actions):
+        self.length = length
+        self.additional_features = additional_features
         self.n_actions = n_actions
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
-        self.policy_net = DQN(length, n_actions)
-        self.target_net = DQN(length, n_actions)
+        self.policy_net = DQN(length, self.additional_features, n_actions)
+        self.target_net = DQN(length, self.additional_features, n_actions)
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.target_net.eval()
 
-        self.optimizer = optim.Adam(self.policy_net.parameters(), lr=0.0001)
-        self.memory = ReplayMemory(1000)
+        self.optimizer = optim.Adam(self.policy_net.parameters(), lr=0.01)
+        self.memory = ReplayMemory(100000)
         
-        self.BATCH_SIZE = 32
+        self.BATCH_SIZE = 64
         self.GAMMA = 1
         self.EPS_START = 0.99
         self.EPS_END = 0.1
-        self.EPS_DECAY = 10000
-        self.TARGET_UPDATE = 100
+        self.EPS_DECAY = 100000
+        self.TARGET_UPDATE = 1000
         self.target_update_count = 0
     
     def get_memory(self):

@@ -45,6 +45,12 @@ I don't have a tutorial for how to use this. It was a miracle that I remembered 
 ## More things to do
 Modules could have an onMessage() function instead of run(). This way, users don't have to implement all the loop-related stuff.
 
+Kafka topic creation is in the format `<input id>-<output-id>`, but it's possible for different connections to use the same topic. Example: "a-b" and "c" share the same topic as "a" and "b-c". Need to fix this.
+
+Modify hummingbird to flush a topic when starting a module.
+
+Keep the websocket connection open. cbp websocket automatically disconnects every 23 hours.
+
 # Version 1 (Outdated)
 
 ## What is this?

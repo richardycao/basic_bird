@@ -81,12 +81,12 @@ class DogeJob(Module2):
         fee = self.account_value * 0.1 * 0.005
         doge_value = self.account_value * 0.1 * 0.995
         self.reward = -fee
-        self.account_value -= fee + doge_value
+        self.account_value -= fee
 
         self.doge_owned = doge_value / self.ask
         self.doge_cost_basis = self.ask
-      else: # if has position, nothing happens
-        pass
+      else: # if has position, nothing happens. huge neagtive reward to disincentive it
+        self.reward = -1000 # -self.account_value
     elif self.action == 1: # sell
       if self.doge_owned != 0: # if has position, then sell
         original_doge_value = self.doge_cost_basis * self.doge_owned
@@ -95,12 +95,12 @@ class DogeJob(Module2):
         cash_back = current_doge_value * 0.995
         
         self.reward = cash_back - original_doge_value
-        self.account_value += cash_back
+        self.account_value -= fee
 
         self.doge_owned = 0
         self.doge_cost_basis = 0
-      else: # if no position, nothing happens
-        pass
+      else: # if no position, nothing happens. huge negative reward to disincentive it
+        self.reward = -1000 # -self.account_value
     elif self.action == 2: # hold
       pass
 

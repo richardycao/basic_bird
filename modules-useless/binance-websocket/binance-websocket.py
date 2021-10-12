@@ -8,28 +8,42 @@ except ImportError:
     import _thread as thread
 
 """
-TODO:
-Do step 3 here:
-https://github.com/binance-us/binance-official-api-docs/blob/master/web-socket-streams.md#how-to-manage-a-local-order-book-correctly
+Documentation for CBPWebsocket
 
-To get the existing bid/ask first. Currently I'm only getting the updates.
+Description: Short for "Coinbase Pro Websocket". Reads streamed data from the
+             Coinbase Pro websocket for a variety of channels, such as level2,
+             ticker, heartbeat, etc. Sends the data to a Kafka partition for
+             load balancing before being serviced by the next module.
+
+Parameters:
+    product_ids: list product ids from Coinbase Pro API (?)
+                 e.g. ['BTC-USD','XLM-USD']
+    channels   : list of channels (?)
+
+Message Format:
+    Input: N/A
+    Output: See https://docs.pro.coinbase.com/?python#channels
+
+Command:
+    python3 cbp-websocket.py
+    e.g. python3 cbp-websocket.py
+
 """
 
 class CBPWebsocket(Module2):
     def __init__(self):
         super().__init__()
 
-        self.set_param('product_ids', required=True)
-        self.set_param('channels', required=True)
+        self.set_param('params', required=True)
 
         self.websocket_params = {
-            'type': 'subscribe',
-            'product_ids': self.params['product_ids'], # e.g. ['BTC-USD']
-            'channels': self.params['channels']        # e.g. ['level2']
+            'method': 'SUBSCRIBE',
+            'params': self.params['params'],
+            'id': 1
         }
 
         websocket.enableTrace(True)
-        self.ws = websocket.WebSocketApp("wss://ws-feed.pro.coinbase.com",
+        self.ws = websocket.WebSocketApp("wss://stream.binance.us:9443/ws/btcusdt@depth",
                                         on_open = self.on_open,
                                         on_message = self.on_message,
                                         on_error = self.on_error,
